@@ -1,0 +1,6 @@
+{
+  "name": "Jurnal Akademik Belajar Khot",
+  "description": "Sistem Digital Jurnal Pembelajaran, Penilaian Kemampuan Menulis Khot, Kehadiran Santri, Rekap Nilai, dan Rapor Akademik Belajar Khot.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

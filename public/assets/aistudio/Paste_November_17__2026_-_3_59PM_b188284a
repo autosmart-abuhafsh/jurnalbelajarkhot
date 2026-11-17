@@ -1,0 +1,1419 @@
+# PRODUCT REQUIREMENTS DOCUMENT (PRD)
+# JURNAL AKADEMIK BELAJAR KHOT
+### Digital Student Assessment, Attendance & Academic Report System
+
+**Nama Aplikasi:** Jurnal Akademik Belajar Khot  
+**Lembaga:** Belajar Khot  
+**Kategori:** Education Management System / Student Assessment System  
+**Platform:** Web Application (Desktop, Tablet, Smartphone)  
+**Bahasa:** Indonesia  
+**Pengguna Utama:** Administrator dan Guru/Pengajar  
+**Identitas Visual:** Mengikuti aplikasi Member Belajar Khot yang telah tersedia.
+
+---
+
+# 1. DESKRIPSI PROYEK
+
+Buat sebuah aplikasi web profesional bernama **JURNAL AKADEMIK BELAJAR KHOT**, yaitu sistem digital untuk mengelola jurnal kegiatan pembelajaran, penilaian kemampuan menulis khot, kehadiran santri, rekap nilai, serta pembuatan rapor akademik.
+
+Aplikasi ini merupakan sistem pendamping dari aplikasi Membership Management Belajar Khot yang telah tersedia.
+
+Tujuan utama aplikasi adalah menggantikan pencatatan nilai dan absensi secara manual menjadi sistem digital yang terstruktur, mudah diedit, tersimpan secara permanen, dan dapat dicetak menjadi laporan akademik yang profesional.
+
+Guru dapat mencatat perkembangan setiap santri dalam setiap pertemuan pembelajaran. Seluruh nilai dan kehadiran akan direkap otomatis berdasarkan tanggal, pertemuan, santri, kelas, serta periode pembelajaran.
+
+Sistem harus mampu menghasilkan dua jenis laporan utama:
+
+1. **Rapor Harian:** Laporan penilaian santri berdasarkan satu tanggal atau satu pertemuan pembelajaran.
+2. **Rapor Bulanan:** Laporan perkembangan akademik santri berdasarkan seluruh pertemuan dalam satu bulan.
+
+Seluruh data harus dapat diperbarui atau dikoreksi oleh pengguna yang memiliki hak akses.
+
+Aplikasi harus memiliki tampilan premium, elegan, profesional, ringan, dan sangat mudah digunakan oleh guru.
+
+# 2. TUJUAN APLIKASI
+
+Aplikasi dibuat untuk menyelesaikan permasalahan administrasi pembelajaran berikut:
+
+1. Memudahkan guru mencatat daftar kehadiran santri.
+2. Mencatat tanggal dan kegiatan setiap pertemuan.
+3. Mencatat materi pembelajaran yang disampaikan.
+4. Memberikan nilai kepada setiap santri.
+5. Menilai perkembangan kemampuan menulis khot.
+6. Menyimpan catatan dan evaluasi guru.
+7. Merekap seluruh nilai harian secara otomatis.
+8. Merekap jumlah kehadiran, izin, sakit, dan tanpa keterangan.
+9. Menghitung rata-rata nilai bulanan.
+10. Mencetak rapor harian dan rapor bulanan.
+11. Memungkinkan perubahan atau koreksi nilai apabila terjadi kesalahan.
+12. Menyimpan riwayat penilaian setiap santri secara terstruktur.
+
+# 3. REFERENSI DESAIN DAN IDENTITAS VISUAL
+
+WAJIB menggunakan referensi desain dari aplikasi Member Belajar Khot yang telah diberikan.
+
+Jangan membuat identitas visual yang sepenuhnya berbeda.
+
+## A. Konsep desain
+
+Gunakan pendekatan:
+
+- Modern Minimalist Educational Dashboard.
+- Premium Academic Management System.
+- Clean UI/UX.
+- Corporate Modern Minimalist.
+- Elegant Islamic Educational Identity.
+
+Tampilan harus memberikan kesan lembaga pendidikan kaligrafi Islam yang profesional, terpercaya, rapi, dan terorganisasi.
+
+Hindari desain yang terlalu ramai, penuh warna, atau terlalu banyak ornamen.
+
+## B. Palet warna
+
+Gunakan warna berikut:
+
+| Elemen | Warna |
+|---|---|
+| Primary | #19432D |
+| Primary Secondary | #315B43 |
+| Matcha Accent | #A3D1B3 |
+| Main Background | #FAFCF9 |
+| Soft Background | #F3F7F2 |
+| Card Background | #FFFFFF |
+| Main Text | #26332A |
+| Secondary Text | #6B776D |
+| Border | #E3EAE3 |
+| Success | #3B7551 |
+| Warning | #A06A18 |
+| Error | #B44238 |
+
+## C. Typography
+
+Gunakan font Plus Jakarta Sans.
+
+Ketentuan:
+- Heading tegas dan profesional.
+- Body text mudah dibaca.
+- Angka nilai harus jelas.
+- Tabel menggunakan ukuran font yang nyaman dibaca.
+- Informasi tanggal dan nomor identitas menggunakan tampilan angka yang rapi.
+
+## D. Dark Mode
+
+Sediakan fitur Light Mode dan Dark Mode.
+
+Referensi warna Dark Mode:
+- Background: #0D1510.
+- Surface: #142019.
+- Secondary Surface: #1B2B22.
+- Border: #24382C.
+- Text: #ECF3EE.
+
+Pilihan tema harus konsisten di seluruh halaman.
+
+## E. Logo
+
+Gunakan logo resmi Belajar Khot dari sistem sebelumnya.
+
+Apabila logo belum tersedia, tampilkan identitas logo geometris Islami dengan elemen:
+- Ornamen geometris Islam.
+- Pena qalam.
+- Huruf Arab خ sebagai elemen monogram.
+
+Jangan mengganti identitas merek Belajar Khot.
+
+# 4. PENGGUNA DAN HAK AKSES
+
+Buat sistem login dengan pembagian dua jenis pengguna.
+
+## A. Administrator
+
+Administrator mempunyai akses penuh terhadap seluruh aplikasi.
+
+Hak akses:
+- Melihat semua data santri.
+- Menambahkan santri.
+- Mengedit data santri.
+- Mengelola kelas dan kelompok belajar.
+- Mengelola data guru.
+- Membuat jurnal pembelajaran.
+- Menginput dan mengedit absensi.
+- Menginput dan mengedit nilai.
+- Melihat seluruh rekap nilai.
+- Mengedit nilai yang sudah tersimpan.
+- Membuat rapor harian.
+- Membuat rapor bulanan.
+- Mencetak dan mengunduh rapor.
+- Mengatur kriteria penilaian.
+- Mengelola identitas lembaga.
+- Melihat riwayat aktivitas pengguna.
+- Menghapus data dengan konfirmasi.
+
+## B. Guru/Pengajar
+
+Guru memiliki akses terhadap kelas atau kelompok belajar yang ditugaskan kepadanya.
+
+Hak akses:
+- Melihat daftar santri di kelasnya.
+- Melihat informasi santri.
+- Membuat jurnal pertemuan.
+- Mengisi daftar hadir.
+- Memberikan nilai.
+- Mengedit nilai.
+- Mengisi catatan perkembangan santri.
+- Melihat rekap nilai kelasnya.
+- Melihat rapor santri.
+- Mencetak rapor apabila diizinkan administrator.
+
+Guru tidak boleh mengubah pengaturan sistem, hak akses administrator, atau menghapus data milik sistem.
+
+## C. Keamanan
+
+Gunakan autentikasi yang benar.
+
+Jangan menggunakan password hardcode sebagai sistem login produksi.
+
+Jangan menyimpan password dalam bentuk teks biasa.
+
+Semua hak akses harus divalidasi di backend, bukan hanya disembunyikan dari frontend.
+
+# 5. STRUKTUR MENU APLIKASI
+
+Buat sidebar navigasi pada desktop dan navigasi mobile yang mudah diakses.
+
+Menu utama:
+
+1. Dashboard
+2. Data Santri
+3. Kelas & Kelompok
+4. Jurnal Pembelajaran
+5. Absensi Santri
+6. Penilaian Santri
+7. Rekap Nilai
+8. Rapor Harian
+9. Rapor Bulanan
+10. Rubrik Penilaian
+11. Data Guru
+12. Riwayat Aktivitas
+13. Pengaturan
+14. Logout
+
+Gunakan ikon Lucide yang relevan untuk setiap menu.
+
+# 6. DASHBOARD UTAMA
+
+Buat halaman dashboard yang menampilkan ringkasan kegiatan akademik.
+
+## A. Welcome Section
+
+Tampilkan sapaan:
+
+"Assalamu'alaikum, [Nama Pengguna]."
+
+"Selamat datang di Jurnal Akademik Belajar Khot."
+
+Tambahkan tanggal hari ini dan informasi periode pembelajaran yang sedang aktif.
+
+## B. Statistik Akademik
+
+Buat kartu statistik:
+
+1. Total Santri Aktif.
+2. Total Pertemuan Bulan Ini.
+3. Total Kehadiran Bulan Ini.
+4. Rata-rata Nilai Santri.
+5. Total Santri Hadir Hari Ini.
+6. Total Santri Tidak Hadir Hari Ini.
+
+Setiap kartu menggunakan ikon dan visual yang sederhana.
+
+## C. Grafik Akademik
+
+Buat grafik:
+
+- Perkembangan rata-rata nilai santri per bulan.
+- Statistik kehadiran.
+- Perbandingan status absensi.
+- Perkembangan penilaian per kelas.
+
+Seluruh grafik harus mengambil data sebenarnya dari database.
+
+## D. Aktivitas Terbaru
+
+Tampilkan aktivitas terbaru seperti:
+- Jurnal pertemuan baru.
+- Input absensi.
+- Perubahan nilai.
+- Rapor yang telah diterbitkan.
+- Penambahan santri.
+
+## E. Akses Cepat
+
+Buat tombol:
+- + Tambah Jurnal.
+- + Input Absensi.
+- + Input Nilai.
+- Lihat Rekap Nilai.
+- Cetak Rapor.
+
+# 7. MODUL DATA SANTRI
+
+Modul ini menjadi pusat data peserta pembelajaran.
+
+Data santri sebaiknya diambil dari aplikasi Member Belajar Khot yang sudah tersedia.
+
+Integrasikan dengan data master Users, Members, dan Classes apabila backend aplikasi sebelumnya dapat diakses.
+
+Jangan membuat daftar santri ganda jika data master sudah tersedia.
+
+## Informasi santri
+
+Setiap santri mempunyai:
+
+1. ID Santri / ID Member.
+2. Nama Lengkap.
+3. Foto Profil (opsional).
+4. Program Khot.
+5. Metode Pembelajaran.
+6. Kelas/Kelompok.
+7. Nama Guru.
+8. Tanggal Bergabung.
+9. Status Keanggotaan.
+
+Contoh:
+
+- ID Member: BK-00001
+- Nama: Ahmad Abdullah
+- Program: Khot Naskhi
+- Metode: Online
+- Kelas: Kelompok Naskhi A
+- Guru: Ustadz Syamsu Muhajir
+
+Data di atas hanya contoh demonstrasi.
+
+## Fitur:
+
+- Tambah santri.
+- Edit santri.
+- Lihat detail santri.
+- Cari santri berdasarkan nama atau ID.
+- Filter berdasarkan kelas.
+- Filter berdasarkan program.
+- Filter berdasarkan metode pembelajaran.
+- Filter berdasarkan status.
+- Import data santri.
+- Export data santri.
+
+Sediakan halaman detail santri yang memuat riwayat pembelajaran, nilai, absensi, dan rapor.
+
+# 8. MODUL KELAS DAN KELOMPOK PEMBELAJARAN
+
+Administrator dapat membuat dan mengelola kelompok belajar.
+
+Informasi kelas:
+
+- ID Kelas.
+- Nama Kelas.
+- Program Khot.
+- Metode Pembelajaran.
+- Guru Pengajar.
+- Daftar Santri.
+- Status Kelas.
+
+Program pembelajaran mengikuti data master Belajar Khot.
+
+Default:
+- Khot Naskhi.
+- Khot Riq'ah.
+
+Metode:
+- Online.
+- Offline.
+
+Nama program dan kelompok dapat disesuaikan melalui pengaturan administrator.
+
+Setiap kelas memiliki daftar santri yang akan digunakan dalam pencatatan jurnal, absensi, serta penilaian.
+
+# 9. MODUL JURNAL PEMBELAJARAN
+
+Ini merupakan salah satu fitur inti aplikasi.
+
+Buat halaman khusus untuk mencatat setiap kegiatan pembelajaran.
+
+Administrator dan guru dapat membuat jurnal baru setiap kali kegiatan pembelajaran berlangsung.
+
+## A. Form Tambah Jurnal
+
+Data yang harus diisi:
+
+1. Nomor Jurnal (otomatis).
+2. Tanggal Pertemuan.
+3. Hari.
+4. Kelas/Kelompok.
+5. Program Khot.
+6. Nama Guru.
+7. Metode Pembelajaran.
+8. Pertemuan Ke-.
+9. Materi Pembelajaran.
+10. Target Pembelajaran.
+11. Ringkasan Kegiatan.
+12. Catatan Guru.
+13. Status Jurnal.
+
+Status:
+- Draft.
+- Selesai.
+
+Nomor jurnal dibuat otomatis dan unik.
+
+## B. Daftar Jurnal
+
+Tampilkan tabel:
+
+| No | Tanggal | Pertemuan | Kelas | Materi | Guru | Aksi |
+|---|---|---|---|---|---|---|
+
+Fitur:
+- Tambah jurnal.
+- Lihat detail jurnal.
+- Edit jurnal.
+- Hapus jurnal dengan konfirmasi.
+- Cari jurnal.
+- Filter tanggal.
+- Filter bulan.
+- Filter kelas.
+- Filter guru.
+- Cetak jurnal.
+
+## C. Detail Jurnal
+
+Ketika jurnal dibuka, tampilkan:
+
+- Informasi pertemuan.
+- Tanggal.
+- Materi.
+- Target.
+- Guru.
+- Daftar santri.
+- Status kehadiran santri.
+- Penilaian santri.
+- Catatan perkembangan.
+
+Jurnal harus terhubung langsung dengan modul Absensi dan Penilaian.
+
+# 10. MODUL ABSENSI SANTRI
+
+Buat fitur absensi yang mudah digunakan dan cepat diisi.
+
+Guru tidak perlu mencatat kehadiran satu per satu melalui halaman terpisah.
+
+Ketika membuka jurnal pertemuan, seluruh daftar santri pada kelas tersebut langsung ditampilkan.
+
+## A. Form Absensi
+
+Kolom:
+
+| No | ID Member | Nama Santri | Hadir | Izin | Sakit | Alpa | Keterangan |
+|---|---|---|---|---|---|---|---|
+
+Gunakan pilihan status yang mudah dipilih.
+
+Status absensi:
+
+1. Hadir.
+2. Izin.
+3. Sakit.
+4. Alpa / Tanpa Keterangan.
+
+Guru dapat memberikan keterangan tambahan.
+
+## B. Fitur Absensi
+
+- Tandai semua santri hadir.
+- Ubah status secara individual.
+- Simpan absensi.
+- Edit absensi.
+- Cari santri.
+- Filter berdasarkan kelas.
+- Filter berdasarkan tanggal.
+- Melihat riwayat absensi.
+
+Pastikan satu santri tidak mempunyai dua data absensi untuk jurnal pertemuan yang sama.
+
+Absensi harus terhubung langsung dengan tanggal dan jurnal pertemuan.
+
+## C. Rekap Absensi
+
+Sediakan halaman khusus untuk melihat rekap absensi.
+
+Filter:
+- Hari ini.
+- Mingguan.
+- Bulanan.
+- Rentang tanggal.
+- Kelas.
+- Santri.
+
+Contoh tabel:
+
+| Santri | Hadir | Izin | Sakit | Alpa | Persentase Kehadiran |
+|---|---:|---:|---:|---:|---:|
+| Ahmad Abdullah | 12 | 1 | 0 | 1 | 85,71% |
+
+Angka di atas hanya contoh.
+
+Persentase kehadiran dihitung berdasarkan jumlah pertemuan yang seharusnya diikuti santri dalam periode yang dipilih.
+
+Santri yang baru bergabung tidak boleh dihitung absen pada pertemuan sebelum tanggal bergabungnya.
+
+Sediakan tombol cetak rekap absensi.
+
+# 11. MODUL PENILAIAN SANTRI
+
+Fitur ini merupakan inti penilaian kemampuan setiap santri dalam belajar khot.
+
+Buat halaman penilaian yang sederhana, profesional, dan mudah digunakan guru.
+
+## A. Penilaian Per Pertemuan
+
+Penilaian harus terhubung dengan:
+
+- Tanggal.
+- Jurnal.
+- Kelas.
+- Santri.
+- Guru.
+- Materi.
+- Program Khot.
+
+Ketika guru memilih jurnal pertemuan, daftar santri pada kelas tersebut langsung ditampilkan.
+
+Guru dapat memasukkan nilai setiap santri.
+
+## B. Kriteria Penilaian
+
+Sediakan rubrik penilaian awal yang dapat diubah oleh administrator.
+
+Contoh kriteria penilaian:
+
+1. Ketepatan Bentuk Huruf.
+2. Ketepatan Kaidah Khot.
+3. Proporsi dan Ukuran Huruf.
+4. Kerapian Tulisan.
+5. Konsistensi Tulisan.
+6. Ketelitian dan Keterampilan.
+7. Pemahaman Materi.
+8. Penyelesaian Tugas/Latihan.
+
+Kriteria tersebut merupakan rubrik awal dan harus dapat disesuaikan dengan arahan guru serta karakteristik program Khot Naskhi maupun Khot Riq'ah.
+
+Setiap kriteria dapat memiliki bobot penilaian.
+
+Contoh:
+
+| Kriteria | Bobot |
+|---|---:|
+| Ketepatan Bentuk Huruf | 25% |
+| Kaidah Khot | 20% |
+| Proporsi dan Ukuran | 20% |
+| Kerapian | 15% |
+| Konsistensi | 10% |
+| Penyelesaian Tugas | 10% |
+| Total | 100% |
+
+Bobot tersebut hanya nilai awal dan dapat diubah oleh administrator.
+
+## C. Skala Nilai
+
+Gunakan skala nilai 0–100.
+
+Guru dapat mengisi nilai secara langsung.
+
+Contoh tampilan:
+
+| No | Nama Santri | Bentuk Huruf | Kaidah | Proporsi | Kerapian | Nilai Akhir | Aksi |
+|---|---|---:|---:|---:|---:|---:|---|
+| 1 | Ahmad Abdullah | 90 | 85 | 88 | 90 | 88,25 | Edit |
+| 2 | Muhammad Ali | 80 | 85 | 82 | 90 | 84,25 | Edit |
+
+Angka hanya contoh.
+
+## D. Catatan Guru
+
+Setiap santri harus dapat diberikan catatan khusus.
+
+Contoh:
+- Bentuk huruf sudah semakin baik.
+- Perlu memperhatikan proporsi ukuran huruf.
+- Perlu memperbaiki ketepatan kaidah.
+- Latihan mandiri perlu ditingkatkan.
+
+Catatan guru harus tersimpan dalam riwayat penilaian santri.
+
+## E. Fitur Pengeditan Nilai
+
+Nilai harus dapat diedit kapan saja oleh pengguna yang memiliki hak akses.
+
+Sediakan:
+- Edit nilai.
+- Simpan perubahan.
+- Batalkan perubahan.
+- Riwayat perubahan.
+- Catatan alasan koreksi.
+
+Jangan menghapus nilai sebelumnya tanpa mencatat riwayat perubahan.
+
+Nilai yang belum dimasukkan harus berstatus Belum Dinilai, bukan otomatis dianggap nol.
+
+Santri yang berstatus Izin, Sakit, atau Alpa juga tidak otomatis mendapatkan nilai 0. Nilai dan kehadiran merupakan dua data yang berbeda.
+
+# 12. MODUL REKAP NILAI
+
+Buat halaman khusus untuk menampilkan seluruh rekap penilaian santri.
+
+Rekap harus dapat dilihat berdasarkan:
+
+- Semua santri.
+- Individu santri.
+- Kelas.
+- Program Khot.
+- Guru.
+- Tanggal.
+- Bulan.
+- Rentang periode.
+
+## A. Rekap Nilai Harian
+
+Contoh:
+
+| Tanggal | Nama Santri | Materi | Nilai | Predikat | Catatan |
+|---|---|---|---:|---|---|
+| 01/11/2026 | Ahmad Abdullah | Huruf Mufradat | 90 | A | Baik |
+| 08/11/2026 | Ahmad Abdullah | Sambungan Huruf | 85 | B | Perlu latihan |
+
+Nilai harus dapat dibuka dan diedit.
+
+## B. Rekap Nilai Bulanan
+
+Contoh:
+
+| No | Nama Santri | Rata-rata Nilai | Hadir | Izin | Sakit | Alpa |
+|---|---|---:|---:|---:|---:|---:|
+| 1 | Ahmad Abdullah | 88 | 6 | 1 | 0 | 0 |
+| 2 | Muhammad Ali | 85 | 5 | 1 | 1 | 0 |
+
+Semua angka harus dihitung otomatis dari data jurnal, absensi, dan penilaian.
+
+## C. Perhitungan Nilai
+
+Sistem harus menggunakan rumus yang konsisten.
+
+Nilai per pertemuan:
+
+Nilai Akhir = Total (Nilai Kriteria × Bobot) / Total Bobot Kriteria yang Dinilai.
+
+Nilai bulanan:
+
+Rata-rata Nilai Bulanan = Total Nilai Akhir Pertemuan yang Sudah Dinilai / Jumlah Pertemuan yang Sudah Dinilai.
+
+Nilai yang belum diisi tidak boleh masuk sebagai nilai nol dalam perhitungan.
+
+Nilai yang tidak tersedia karena santri tidak hadir tetap ditampilkan sebagai belum dinilai.
+
+Persentase kehadiran:
+
+Persentase Kehadiran = (Jumlah Hadir / Total Pertemuan yang Menjadi Kewajiban Santri) × 100%.
+
+Apabila diperlukan, predikat nilai dapat menggunakan kategori awal:
+
+- A: 90–100.
+- B: 80–89.
+- C: 70–79.
+- D: Di bawah 70.
+
+Batas predikat harus dapat diedit administrator.
+
+# 13. MODUL RAPOR HARIAN
+
+Buat fitur untuk membuat dan mencetak rapor harian.
+
+Rapor harian merupakan laporan perkembangan individu santri berdasarkan satu pertemuan atau tanggal yang dipilih.
+
+## Informasi Rapor Harian
+
+Bagian kepala rapor:
+
+- Logo Belajar Khot.
+- Nama lembaga.
+- Judul RAPOR PENILAIAN HARIAN.
+- Tanggal pembelajaran.
+- Nomor jurnal.
+
+Identitas santri:
+
+- Nama lengkap.
+- ID Member.
+- Program Khot.
+- Metode Pembelajaran.
+- Kelas.
+- Nama Guru.
+
+Bagian penilaian:
+
+| No | Aspek Penilaian | Nilai | Catatan |
+|---|---|---:|---|
+| 1 | Ketepatan Bentuk Huruf | 90 | Baik |
+| 2 | Kaidah Khot | 85 | Perlu latihan |
+| 3 | Proporsi dan Ukuran | 88 | Baik |
+| 4 | Kerapian Tulisan | 90 | Sangat baik |
+
+Bagian hasil:
+
+- Nilai Akhir.
+- Predikat.
+- Status Kehadiran.
+- Materi Pembelajaran.
+- Catatan Perkembangan Guru.
+
+Bagian penutup:
+
+- Tanggal penerbitan.
+- Nama Guru.
+- Ruang tanda tangan Guru.
+- Ruang tanda tangan atau pengesahan lembaga jika diperlukan.
+
+## Fitur Rapor Harian
+
+- Preview rapor sebelum dicetak.
+- Edit data penilaian.
+- Edit catatan guru.
+- Cetak rapor.
+- Simpan sebagai PDF.
+- Cetak rapor per santri.
+- Cetak rapor untuk beberapa santri sekaligus.
+
+Format cetak menggunakan A4 Portrait.
+
+Pastikan layout profesional, tidak terpotong, dan memiliki margin cetak yang benar.
+
+# 14. MODUL RAPOR BULANAN
+
+Ini merupakan fitur laporan akademik utama.
+
+Guru dan administrator dapat memilih:
+
+- Bulan.
+- Tahun.
+- Kelas.
+- Santri.
+- Program Khot.
+
+Kemudian sistem secara otomatis mengumpulkan seluruh data jurnal, nilai, dan absensi pada periode tersebut.
+
+## A. Identitas Rapor
+
+Tampilkan:
+
+- Logo Belajar Khot.
+- Nama lembaga.
+- Judul RAPOR PERKEMBANGAN BELAJAR KHOT.
+- Periode Bulan dan Tahun.
+- Nama Lengkap Santri.
+- ID Member.
+- Program Khot.
+- Metode Pembelajaran.
+- Kelas.
+- Nama Guru.
+
+## B. Rekap Kehadiran
+
+Buat tabel:
+
+| Keterangan | Jumlah |
+|---|---:|
+| Total Pertemuan | 8 |
+| Hadir | 6 |
+| Izin | 1 |
+| Sakit | 1 |
+| Alpa | 0 |
+| Persentase Kehadiran | 75% |
+
+Angka merupakan contoh demonstrasi.
+
+## C. Rekap Penilaian
+
+| No | Aspek Penilaian | Nilai Rata-rata | Predikat |
+|---|---|---:|---|
+| 1 | Ketepatan Bentuk Huruf | 90 | A |
+| 2 | Kaidah Khot | 85 | B |
+| 3 | Proporsi dan Ukuran | 88 | B |
+| 4 | Kerapian Tulisan | 90 | A |
+| 5 | Konsistensi Tulisan | 86 | B |
+
+Nilai per aspek dihitung dari seluruh penilaian yang tersedia selama periode bulanan.
+
+## D. Nilai Akhir Bulanan
+
+Tampilkan komponen utama dengan ukuran yang jelas:
+
+- Nilai Rata-rata Bulanan.
+- Predikat.
+- Persentase Kehadiran.
+
+Buat visualisasi kecil berupa grafik perkembangan nilai apabila diperlukan.
+
+## E. Evaluasi Guru
+
+Sediakan bagian:
+
+**Perkembangan yang Dicapai:**
+
+Catatan tentang kemampuan santri yang mengalami peningkatan.
+
+**Hal yang Perlu Ditingkatkan:**
+
+Catatan tentang bagian yang perlu diperbaiki.
+
+**Rekomendasi Latihan:**
+
+Arahan guru untuk latihan berikutnya.
+
+**Kesimpulan Guru:**
+
+Ringkasan perkembangan santri selama satu bulan.
+
+Semua catatan bisa diedit sebelum rapor diterbitkan.
+
+## F. Pengesahan
+
+Tambahkan:
+
+- Tempat dan tanggal penerbitan.
+- Nama Guru/Pengajar.
+- Tanda tangan Guru.
+- Kolom pengesahan Kepala/Pengelola Lembaga apabila diperlukan.
+
+## G. Fitur Rapor Bulanan
+
+- Preview rapor.
+- Edit informasi rapor.
+- Edit evaluasi guru.
+- Cetak PDF.
+- Cetak individual.
+- Cetak massal satu kelas.
+- Simpan arsip rapor.
+- Cetak kembali rapor yang sudah pernah dibuat.
+
+Gunakan desain yang elegan, formal, dan layak menjadi dokumen resmi lembaga pendidikan.
+
+Rapor harus menggunakan format A4 Portrait.
+
+# 15. FITUR EDIT DAN KOREKSI DATA
+
+Semua modul utama harus mendukung pengeditan data.
+
+Admin dapat mengoreksi:
+- Data santri.
+- Data kelas.
+- Data jurnal.
+- Tanggal pertemuan.
+- Materi pembelajaran.
+- Data absensi.
+- Nilai.
+- Catatan guru.
+- Evaluasi rapor.
+
+Setiap perubahan penting harus dicatat dalam Activity Logs.
+
+Informasi riwayat:
+- Nama pengguna yang mengubah.
+- Jenis data yang diubah.
+- Nilai atau data sebelumnya.
+- Nilai atau data terbaru.
+- Tanggal dan waktu perubahan.
+
+Data yang sudah pernah dicetak tetap dapat diperbarui dengan membuat versi rapor terbaru.
+
+# 16. MODUL RIWAYAT AKADEMIK SANTRI
+
+Setiap santri mempunyai halaman detail akademik.
+
+Ketika administrator atau guru membuka profil santri, tampilkan beberapa tab:
+
+1. Informasi Santri.
+2. Riwayat Jurnal.
+3. Riwayat Absensi.
+4. Riwayat Penilaian.
+5. Rapor Harian.
+6. Rapor Bulanan.
+7. Catatan Perkembangan.
+
+Semua data ditampilkan berdasarkan urutan tanggal.
+
+Buat visualisasi perkembangan nilai dari waktu ke waktu.
+
+Guru dapat melihat perjalanan perkembangan kemampuan santri sejak awal mengikuti pembelajaran sampai periode terbaru.
+
+# 17. FITUR PENCARIAN DAN FILTER
+
+Sediakan pencarian global dan filter pada seluruh tabel.
+
+Filter berdasarkan:
+- Nama santri.
+- ID Member.
+- Kelas.
+- Program Khot.
+- Metode Pembelajaran.
+- Nama Guru.
+- Tanggal.
+- Bulan.
+- Tahun.
+- Status kehadiran.
+- Status penilaian.
+
+Sediakan tombol Reset Filter.
+
+Pastikan pencarian bekerja secara nyata terhadap database.
+
+# 18. MODUL PENGATURAN RUBRIK PENILAIAN
+
+Administrator dapat mengatur kriteria penilaian sesuai arahan guru.
+
+Fitur:
+
+- Tambah aspek penilaian.
+- Edit aspek.
+- Hapus aspek dengan konfirmasi.
+- Atur bobot penilaian.
+- Mengatur urutan kriteria.
+- Mengaktifkan atau menonaktifkan kriteria.
+- Mengatur rubrik berdasarkan program Khot.
+
+Rubrik Khot Naskhi dan Khot Riq'ah dapat dibuat berbeda.
+
+Pastikan total bobot aktif divalidasi agar menjadi 100%.
+
+Jika rubrik diubah, penilaian lama tetap menggunakan bobot yang berlaku ketika penilaian tersebut dibuat. Jangan mengubah nilai historis secara otomatis hanya karena rubrik baru diterapkan.
+
+# 19. MODUL DATA GURU
+
+Administrator dapat mengelola data pengajar.
+
+Informasi:
+
+- ID Guru.
+- Nama Lengkap.
+- Foto.
+- Nomor WhatsApp (opsional).
+- Username.
+- Hak Akses.
+- Kelas yang Diampu.
+- Status Akun.
+
+Fitur:
+- Tambah guru.
+- Edit guru.
+- Nonaktifkan akun.
+- Reset password melalui mekanisme autentikasi yang aman.
+- Melihat aktivitas guru.
+
+# 20. DESAIN HALAMAN CETAK DAN PDF
+
+Bagian ini sangat penting.
+
+Jangan hanya membuat dashboard yang indah. Dokumen hasil cetak harus terlihat profesional.
+
+Buat layout khusus untuk:
+
+1. Jurnal Pembelajaran.
+2. Daftar Absensi Harian.
+3. Rekap Absensi Bulanan.
+4. Rekap Nilai Harian.
+5. Rekap Nilai Bulanan.
+6. Rapor Harian Santri.
+7. Rapor Bulanan Santri.
+
+Ketentuan:
+
+- Kertas A4.
+- Margin standar dokumen.
+- Header lembaga.
+- Logo resmi.
+- Tabel rapi.
+- Font mudah dibaca.
+- Nomor halaman jika diperlukan.
+- Footer identitas lembaga.
+- Ruang tanda tangan.
+
+Gunakan CSS Print Media agar tampilan saat dicetak berbeda dari dashboard.
+
+Saat tombol cetak ditekan, hanya dokumen rapor yang dicetak, bukan sidebar, navigasi, tombol, atau elemen dashboard.
+
+Sediakan tombol:
+- Preview.
+- Cetak.
+- Download PDF.
+- Kembali.
+
+Pastikan hasil PDF tidak terpotong dan tetap rapi.
+
+# 21. STRUKTUR DATABASE
+
+Gunakan database persisten.
+
+Rekomendasi teknologi penyimpanan mengikuti arsitektur proyek Member Belajar Khot yang sudah tersedia.
+
+Gunakan Google Sheets sebagai penyimpanan terstruktur melalui Google Apps Script Web App dan backend API yang aman.
+
+Jika aplikasi terhubung ke backend proyek lama, pertahankan sistem autentikasi dan mekanisme sinkronisasinya.
+
+Gunakan tabel berikut.
+
+## A. Data Master
+
+Gunakan tabel yang sudah ada apabila tersedia:
+- Users.
+- Members.
+- Classes.
+- ActivityLogs.
+- Settings.
+
+Jangan menggandakan data santri yang sudah ada.
+
+## B. JurnalPembelajaran
+
+Kolom:
+- jurnalId
+- tanggal
+- kelasId
+- namaKelas
+- programKhot
+- metodePembelajaran
+- guruId
+- namaGuru
+- pertemuanKe
+- materiPembelajaran
+- targetPembelajaran
+- ringkasanKegiatan
+- catatanGuru
+- statusJurnal
+- createdAt
+- createdBy
+- updatedAt
+- updatedBy
+
+## C. Absensi
+
+Kolom:
+- absensiId
+- jurnalId
+- tanggal
+- santriId
+- memberId
+- namaSantri
+- kelasId
+- statusKehadiran
+- keterangan
+- createdAt
+- updatedAt
+
+Gunakan kombinasi jurnalId dan santriId untuk mencegah absensi ganda.
+
+## D. Penilaian
+
+Kolom:
+- penilaianId
+- jurnalId
+- tanggal
+- santriId
+- memberId
+- aspekId
+- namaAspek
+- nilai
+- bobot
+- catatanPenilaian
+- createdBy
+- updatedAt
+- updatedBy
+
+Setiap aspek penilaian mempunyai record tersendiri agar mudah diedit dan direkap.
+
+## E. RubrikPenilaian
+
+Kolom:
+- aspekId
+- namaAspek
+- deskripsi
+- programKhot
+- bobot
+- urutan
+- statusAktif
+- createdAt
+- updatedAt
+
+## F. CatatanPerkembangan
+
+Kolom:
+- catatanId
+- santriId
+- jurnalId
+- tanggal
+- kategoriCatatan
+- isiCatatan
+- guruId
+- createdAt
+
+## G. RiwayatRapor
+
+Kolom:
+- raporId
+- santriId
+- memberId
+- jenisRapor
+- periodeAwal
+- periodeAkhir
+- nilaiAkhir
+- predikat
+- persentaseKehadiran
+- tanggalPenerbitan
+- diterbitkanOleh
+- versiRapor
+- statusRapor
+
+Arsip rapor harus dapat diakses kembali.
+
+## H. PengaturanAkademik
+
+Kolom:
+- settingKey
+- settingValue
+- updatedAt
+
+Digunakan untuk menyimpan:
+- Identitas lembaga.
+- Skala nilai.
+- Batas predikat.
+- Pengaturan rapor.
+- Pengaturan rubrik.
+- Periode akademik.
+
+Gunakan ID unik untuk semua data. Jangan menggunakan nomor baris spreadsheet sebagai ID utama.
+
+# 22. INTEGRASI GOOGLE APPS SCRIPT DAN GOOGLE SHEETS
+
+Gunakan arsitektur yang aman dan konsisten dengan proyek Member Belajar Khot.
+
+Google Sheets berfungsi sebagai database yang dapat dikelola melalui Google Drive.
+
+Google Apps Script digunakan sebagai backend integrasi data.
+
+Ketentuan:
+
+1. Buat file Code.gs untuk endpoint API.
+2. Buat file Setup.gs untuk inisialisasi database.
+3. Buat sheet secara otomatis apabila belum tersedia.
+4. Pertahankan data lama pada spreadsheet.
+5. Jangan menjalankan clear() atau menghapus seluruh baris data ketika melakukan setup.
+6. Jika sheet sudah memiliki data, cukup tambahkan kolom yang memang diperlukan secara aman.
+7. Jangan mengubah struktur Users, Members, atau Classes yang digunakan aplikasi member sebelumnya secara sembarangan.
+8. Sinkronisasi data harus berjalan dengan benar.
+9. Tampilkan status koneksi database.
+10. Tampilkan pesan kesalahan apabila backend tidak tersedia.
+
+Gunakan mekanisme validasi dan pengamanan endpoint.
+
+Jangan melakukan penulisan langsung ke Google Sheets dari browser yang membocorkan kredensial atau hak akses administratif.
+
+# 23. KEAMANAN DAN PERLINDUNGAN DATA
+
+Terapkan:
+
+- Login dan logout.
+- Role-based access control.
+- Proteksi seluruh halaman internal.
+- Validasi input.
+- Validasi nilai 0–100.
+- Proteksi duplikasi absensi.
+- Audit log.
+- Konfirmasi sebelum menghapus data.
+- Keamanan sesi login.
+- Backup data.
+- Penanganan kegagalan sinkronisasi.
+- Proteksi terhadap akses pengguna yang tidak berhak.
+
+Data nilai dan absensi termasuk data internal lembaga. Jangan menampilkannya secara publik.
+
+# 24. RESPONSIVE DESIGN
+
+Aplikasi wajib berjalan baik pada:
+
+- Desktop.
+- Laptop.
+- Tablet.
+- Smartphone Android.
+- Smartphone iPhone.
+
+Desktop:
+Gunakan sidebar permanen atau collapsible.
+
+Tablet:
+Sesuaikan navigasi dan ukuran tabel.
+
+Mobile:
+Gunakan navigasi yang ringkas, menu drawer atau bottom navigation, serta tampilan tabel responsif.
+
+Pada mobile, tabel nilai sebaiknya bisa ditampilkan dalam bentuk kartu atau tabel yang dapat digeser horizontal.
+
+Form input nilai dan absensi harus nyaman digunakan melalui layar sentuh.
+
+Jangan membuat aplikasi yang hanya bagus di desktop.
+
+# 25. UX DAN DETAIL INTERAKSI
+
+Pastikan seluruh tombol dan fitur benar-benar berfungsi.
+
+Sediakan:
+- Modal tambah dan edit.
+- Dropdown.
+- Form validasi.
+- Toast notification.
+- Confirmation dialog.
+- Search.
+- Filter.
+- Sorting.
+- Pagination.
+- Loading state.
+- Empty state.
+- Error state.
+- Success state.
+
+Gunakan autosave draft apabila memungkinkan, dengan indikator status penyimpanan yang jelas.
+
+Jangan menampilkan notifikasi berhasil sebelum server benar-benar mengonfirmasi penyimpanan data.
+
+Tidak boleh ada tombol dekoratif yang tidak mempunyai fungsi.
+
+# 26. DATA DEMONSTRASI
+
+Sediakan data demo untuk menguji aplikasi.
+
+Contoh:
+- BK-00001.
+- BK-00002.
+- BK-00003.
+
+Gunakan beberapa contoh jurnal, absensi, nilai, dan rapor.
+
+Tandai semua data sebagai DEMO.
+
+Data demo tidak boleh bercampur atau dianggap sebagai data santri sebenarnya.
+
+Jangan menggunakan data hardcode sebagai pengganti database produksi.
+
+# 27. STRUKTUR HALAMAN / ROUTING
+
+PUBLIC:
+- /login
+
+ADMIN:
+- /admin/dashboard
+- /admin/santri
+- /admin/santri/:id
+- /admin/kelas
+- /admin/guru
+- /admin/jurnal
+- /admin/jurnal/add
+- /admin/jurnal/:id
+- /admin/absensi
+- /admin/penilaian
+- /admin/rekap-nilai
+- /admin/rapor-harian
+- /admin/rapor-bulanan
+- /admin/rubrik
+- /admin/riwayat-aktivitas
+- /admin/pengaturan
+
+GURU:
+- /guru/dashboard
+- /guru/kelas
+- /guru/santri
+- /guru/jurnal
+- /guru/absensi
+- /guru/penilaian
+- /guru/rekap-nilai
+- /guru/rapor
+
+HALAMAN CETAK:
+- /print/jurnal/:id
+- /print/absensi/:id
+- /print/rapor-harian/:id
+- /print/rapor-bulanan/:id
+
+Semua halaman internal wajib dilindungi autentikasi.
+
+# 28. TEKNOLOGI PENGEMBANGAN
+
+Gunakan:
+
+Frontend:
+- React.
+- TypeScript.
+- Tailwind CSS.
+- Lucide React Icons.
+- Komponen UI reusable.
+
+Backend:
+- Google Apps Script Web App.
+- Backend API yang aman.
+- Google Sheets sebagai database.
+
+Arsitektur harus modular.
+
+Pisahkan:
+- Components.
+- Pages.
+- Services.
+- API.
+- Authentication.
+- Database.
+- Types.
+- Utils.
+- Print Templates.
+- Configuration.
+
+Jangan membuat seluruh aplikasi di dalam satu file besar.
+
+Pastikan seluruh dependensi kompatibel dan proses build berjalan tanpa error.
+
+# 29. KRITERIA KEBERHASILAN APLIKASI
+
+Aplikasi dianggap selesai apabila memenuhi seluruh kriteria berikut:
+
+1. Administrator dapat login.
+2. Guru dapat login dengan hak akses terbatas.
+3. Data santri dapat diambil dari database master.
+4. Administrator dapat membuat kelas dan kelompok.
+5. Guru dapat membuat jurnal pertemuan.
+6. Guru dapat menginput absensi seluruh santri.
+7. Guru dapat menginput nilai setiap santri.
+8. Nilai dapat diedit.
+9. Catatan perkembangan dapat disimpan.
+10. Sistem dapat merekap nilai harian.
+11. Sistem dapat merekap nilai bulanan.
+12. Sistem dapat menghitung statistik kehadiran.
+13. Sistem dapat menampilkan riwayat akademik individual.
+14. Rapor harian dapat dibuat.
+15. Rapor bulanan dapat dibuat.
+16. Rapor dapat diedit sebelum diterbitkan.
+17. Rapor dapat dicetak dengan format A4.
+18. Rapor dapat disimpan sebagai PDF.
+19. Data tidak hilang ketika browser direfresh.
+20. Data tetap tersedia setelah logout dan login kembali.
+21. Seluruh fitur berfungsi pada smartphone dan komputer.
+22. Semua perubahan penting tercatat pada riwayat aktivitas.
+
+# 30. OUTPUT YANG HARUS DIHASILKAN GOOGLE AI STUDIO
+
+Bangun aplikasi secara bertahap dengan hasil akhir berupa aplikasi web yang benar-benar berfungsi, bukan hanya prototype desain.
+
+## Tahap 1 — UI/UX dan Struktur
+
+Buat:
+- Design system.
+- Login.
+- Layout dashboard.
+- Sidebar.
+- Navigasi mobile.
+- Dashboard akademik.
+- Komponen tabel.
+- Komponen form.
+- Mode gelap.
+
+Prioritaskan kualitas tampilan dan konsistensi dengan aplikasi Member Belajar Khot.
+
+## Tahap 2 — Database dan Autentikasi
+
+Buat:
+- Struktur database.
+- Integrasi API.
+- Integrasi Google Apps Script.
+- Integrasi Google Sheets.
+- Sistem login.
+- Hak akses administrator dan guru.
+- Sinkronisasi master santri.
+
+## Tahap 3 — Modul Akademik
+
+Implementasikan:
+- Data santri.
+- Data kelas.
+- Data guru.
+- Jurnal pembelajaran.
+- Absensi.
+- Penilaian.
+- Rubrik penilaian.
+- Catatan perkembangan.
+
+Pastikan hubungan antar-data berjalan dengan benar.
+
+## Tahap 4 — Rekap dan Rapor
+
+Implementasikan:
+- Rekap nilai harian.
+- Rekap nilai bulanan.
+- Statistik absensi.
+- Perhitungan nilai otomatis.
+- Rapor harian.
+- Rapor bulanan.
+- Preview cetak.
+- Export PDF.
+- Cetak massal.
+
+## Tahap 5 — Pengujian
+
+Lakukan pengujian:
+
+- Login dan hak akses.
+- CRUD seluruh data.
+- Penyimpanan database.
+- Perubahan nilai.
+- Perhitungan rata-rata.
+- Perhitungan absensi.
+- Pembuatan rapor.
+- Pengeditan rapor.
+- Cetak PDF A4.
+- Responsivitas mobile.
+- Sinkronisasi data.
+- Validasi data.
+
+Perbaiki seluruh bug sebelum menyatakan aplikasi selesai.
+
+# 31. ARAHAN AKHIR KEPADA GOOGLE AI STUDIO
+
+Buat aplikasi ini dengan standar kualitas SaaS pendidikan profesional.
+
+Saya tidak menginginkan aplikasi yang hanya terlihat bagus pada tampilan awal, tetapi fitur-fitur di dalamnya tidak berfungsi.
+
+Prioritaskan tiga hal:
+
+**1. KEMUDAHAN PENCATATAN**
+
+Guru harus bisa mencatat jurnal, mengisi absensi, dan memberikan nilai dengan cepat tanpa proses yang rumit.
+
+**2. AKURASI DATA**
+
+Seluruh nilai, tanggal, absensi, rata-rata, dan rekap harus berasal dari database dan perhitungan yang benar. Perubahan data harus tersimpan secara permanen.
+
+**3. KUALITAS RAPOR**
+
+Hasil rapor merupakan dokumen akademik lembaga. Desain harus formal, elegan, rapi, profesional, dan siap dicetak atau dikirim sebagai PDF.
+
+Aplikasi ini harus menjadi sistem administrasi akademik digital yang memudahkan guru Belajar Khot dalam memantau perkembangan setiap santri.
+
+Gunakan identitas visual aplikasi Member Belajar Khot sebagai acuan utama.
+
+Jangan mengubah atau merusak fungsi kartu member digital yang sudah ada apabila aplikasi ini dikembangkan sebagai bagian dari proyek sebelumnya.
+
+Hasil akhirnya adalah:
+
+**JURNAL AKADEMIK BELAJAR KHOT — Sistem Digital Jurnal, Penilaian, Absensi, Rekap Nilai, dan Rapor Santri.**
