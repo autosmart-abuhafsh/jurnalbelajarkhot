@@ -233,14 +233,103 @@ async function startServer() {
     res.json({ success: true, message: `Password untuk ${targetUser.namaLengkap} berhasil diperbarui.` });
   });
 
-  // GET /api/state
-  app.get('/api/state', (_req, res) => {
-    const db = readDb();
-    res.json({ success: true, data: db });
+  const getEnvGasUrl = () =>
+    (
+      process.env.GAS_WEB_APP_URL ||
+      process.env.VITE_GAS_WEB_APP_URL ||
+      process.env.GOOGLE_APPS_SCRIPT_URL ||
+      process.env.VITE_GOOGLE_APPS_SCRIPT_URL ||
+      process.env.NEXT_PUBLIC_GAS_WEB_APP_URL ||
+      process.env.NEXT_PUBLIC_GAS_URL ||
+      ''
+    ).trim();
+
+  const getEnvSpreadsheetId = () =>
+    (
+      process.env.GAS_SPREADSHEET_ID ||
+      process.env.VITE_GAS_SPREADSHEET_ID ||
+      process.env.SPREADSHEET_ID ||
+      process.env.VITE_SPREADSHEET_ID ||
+      ''
+    ).trim();
+
+  const pushToGasWebApp = async (targetUrl: string, state: unknown, action = 'syncSnapshot') => {
+    const response = await fetch(String(targetUrl), {
+      method: 'POST',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action,
+        state,
+      }),
+    });
+    const text = await response.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      return { success: response.ok, raw: text };
+    }
+  };
+
+  const pullFromGasWebApp = async (targetUrl: string) => {
+    const sep = targetUrl.includes('?') ? '&' : '?';
+    const response = await fetch(`${targetUrl}${sep}action=getState`, {
+      method: 'GET',
+      redirect: 'follow',
+    });
+    if (!response.ok) return null;
+    const json = await response.json();
+    if (json && json.success && json.state && json.state.santri) {
+      return json.state;
+    }
+    return null;
+  };
+
+  // GET /api/config — Informasi Environment Variable Vercel & GAS
+  app.get('/api/config', (_req, res) => {
+    const envGasUrl = getEnvGasUrl();
+    const envSpreadsheetId = getEnvSpreadsheetId();
+    res.json({
+      success: true,
+      gasWebAppUrl: envGasUrl,
+      spreadsheetId: envSpreadsheetId,
+      isEnvConfigured: Boolean(envGasUrl),
+      platform: process.env.VERCEL ? 'vercel' : 'server',
+    });
   });
 
-  // PUT /api/state (Protected RBAC state update)
-  app.put('/api/state', (req, res) => {
+  // GET /api/state
+  app.get('/api/state', async (_req, res) => {
+    let db = readDb();
+    const envGasUrl = getEnvGasUrl();
+    const envSheetId = getEnvSpreadsheetId();
+    if (envGasUrl && db.pengaturan) db.pengaturan.gasWebAppUrl = envGasUrl;
+    if (envSheetId && db.pengaturan) db.pengaturan.spreadsheetId = envSheetId;
+
+    const targetGasUrl = envGasUrl || db.pengaturan?.gasWebAppUrl;
+    if (targetGasUrl && String(targetGasUrl).startsWith('https://script.google.com/')) {
+      try {
+        const remoteState = await pullFromGasWebApp(String(targetGasUrl));
+        if (remoteState) {
+          if (envGasUrl) remoteState.pengaturan.gasWebAppUrl = envGasUrl;
+          if (envSheetId) remoteState.pengaturan.spreadsheetId = envSheetId;
+          writeDb(remoteState);
+          db = remoteState;
+        }
+      } catch {
+        // Fallback ke database lokal jika GAS belum siap
+      }
+    }
+
+    res.json({
+      success: true,
+      data: db,
+      envGasConfigured: Boolean(envGasUrl),
+    });
+  });
+
+  // PUT /api/state (Protected RBAC state update + Auto-Sync GAS)
+  app.put('/api/state', async (req, res) => {
     const auth = getAuthUser(req);
     const { state, section } = req.body || {};
     if (!state) {
@@ -260,9 +349,34 @@ async function startServer() {
       }
     }
 
+    const envGasUrl = getEnvGasUrl();
+    const envSheetId = getEnvSpreadsheetId();
+    if (envGasUrl && state.pengaturan) {
+      state.pengaturan.gasWebAppUrl = envGasUrl;
+    }
+    if (envSheetId && state.pengaturan) {
+      state.pengaturan.spreadsheetId = envSheetId;
+    }
+
+    const targetGasUrl = envGasUrl || state.pengaturan?.gasWebAppUrl;
+    let gasSynced = false;
+
+    if (targetGasUrl && String(targetGasUrl).startsWith('https://script.google.com/')) {
+      try {
+        await pushToGasWebApp(String(targetGasUrl), state, 'syncSnapshot');
+        if (state.pengaturan) {
+          state.pengaturan.lastSyncAt = new Date().toISOString();
+        }
+        gasSynced = true;
+      } catch {
+        // Tetap simpan lokal meskipun koneksi GAS tertunda
+      }
+    }
+
     writeDb(state);
     res.json({
       success: true,
+      gasSynced,
       timestamp: new Date().toISOString(),
     });
   });
@@ -274,40 +388,38 @@ async function startServer() {
       res.status(403).json({ success: false, error: 'Hanya Administrator yang dapat mereset data demo.' });
       return;
     }
-    writeDb(INITIAL_DATABASE_STATE);
-    res.json({ success: true, data: INITIAL_DATABASE_STATE });
+    const initialClone = JSON.parse(JSON.stringify(INITIAL_DATABASE_STATE));
+    if (getEnvGasUrl()) initialClone.pengaturan.gasWebAppUrl = getEnvGasUrl();
+    if (getEnvSpreadsheetId()) initialClone.pengaturan.spreadsheetId = getEnvSpreadsheetId();
+    writeDb(initialClone);
+    res.json({ success: true, data: initialClone });
   });
 
   // POST /api/gas/sync — Server-side proxy to Google Apps Script Web App
   app.post('/api/gas/sync', async (req, res) => {
-    const { gasUrl, action = 'syncSnapshot' } = req.body || {};
-    const db = readDb();
-    const targetUrl = gasUrl || db.pengaturan?.gasWebAppUrl;
+    const { gasUrl, action = 'syncSnapshot', state: clientState } = req.body || {};
+    const db = clientState || readDb();
+    const targetUrl = getEnvGasUrl() || gasUrl || db.pengaturan?.gasWebAppUrl;
 
     if (!targetUrl || !String(targetUrl).startsWith('https://script.google.com/')) {
       res.status(400).json({
         success: false,
-        error: 'URL Google Apps Script Web App belum diatur atau tidak valid (harus berawalan https://script.google.com/).',
+        error: 'URL Google Apps Script Web App belum diatur di Environment Variable Vercel maupun Pengaturan (harus berawalan https://script.google.com/).',
       });
       return;
     }
 
     try {
-      const response = await fetch(String(targetUrl), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action,
-          state: db,
-        }),
-      });
-      const result = await response.json();
-      db.pengaturan.lastSyncAt = new Date().toISOString();
+      const result = await pushToGasWebApp(String(targetUrl), db, action);
+      if (db.pengaturan) {
+        db.pengaturan.gasWebAppUrl = String(targetUrl);
+        db.pengaturan.lastSyncAt = new Date().toISOString();
+      }
       writeDb(db);
       res.json({
         success: true,
         gasResponse: result,
-        lastSyncAt: db.pengaturan.lastSyncAt,
+        lastSyncAt: db.pengaturan?.lastSyncAt,
       });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);

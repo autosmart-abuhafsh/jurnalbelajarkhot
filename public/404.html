@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jurnal Akademik Belajar Khot</title>
+    <script>
+      // GitHub Pages SPA Redirector — Mencegah 404 / layar putih saat refresh sub-halaman di github.io
+      (function () {
+        var l = window.location;
+        var segments = l.pathname.split('/').filter(Boolean);
+        var internalPrefixes = ['login', 'admin', 'guru', 'print'];
+        var baseSegments = [];
+        var routeSegments = [];
+
+        if (segments.length > 0 && internalPrefixes.indexOf(segments[0]) === -1) {
+          baseSegments.push(segments[0]);
+          routeSegments = segments.slice(1);
+        } else {
+          routeSegments = segments;
+        }
+
+        var basePath = baseSegments.length > 0 ? '/' + baseSegments.join('/') + '/' : '/';
+        var targetRoute = '/' + routeSegments.join('/');
+        var newUrl =
+          l.protocol +
+          '//' +
+          l.hostname +
+          (l.port ? ':' + l.port : '') +
+          basePath +
+          '?p=' +
+          encodeURIComponent(targetRoute) +
+          (l.search ? '&' + l.search.slice(1) : '') +
+          l.hash;
+        l.replace(newUrl);
+      })();
+    </script>
+  </head>
+  <body style="background:#FAFCF9;color:#19432D;font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;">
+    <p style="font-size:13px;font-weight:600;">Memuat Jurnal Akademik Belajar Khot...</p>
+  </body>
+</html>

@@ -15,6 +15,11 @@ import {
 } from '../types';
 import { INITIAL_DATABASE_STATE } from '../data/seedData';
 import { upsertAttendanceRecord } from '../utils/academicRules';
+import {
+  normalizeInternalRoute,
+  buildBrowserHistoryUrl,
+  resolveGasEnvironmentConfig,
+} from '../utils/deploymentConfig';
 
 export interface ToastMessage {
   id: string;
@@ -39,6 +44,8 @@ interface AppContextType {
   isLoading: boolean;
   isSaving: boolean;
   dbStatus: 'connected' | 'syncing' | 'error';
+  isEnvGasConfigured: boolean;
+  effectiveGasUrl: string;
   theme: 'light' | 'dark';
   toggleTheme: () => void;
   currentPath: string;
@@ -101,17 +108,106 @@ const STORAGE_KEY_DB = 'bk_academic_db_v1';
 const STORAGE_KEY_TOKEN = 'bk_academic_token_v1';
 const STORAGE_KEY_USER = 'bk_academic_user_v1';
 const STORAGE_KEY_THEME = 'bk_academic_theme_v1';
+const STORAGE_KEY_LOCAL_PASSWORDS = 'bk_academic_local_passwords_v1';
+
+function readLocalPasswords(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_LOCAL_PASSWORDS);
+    if (raw) return JSON.parse(raw);
+  } catch {
+    // ignore
+  }
+  return {
+    admin: 'admin123',
+    syamsu: 'guru123',
+    hasan: 'guru123',
+  };
+}
+
+function saveLocalPassword(username: string, password: string) {
+  try {
+    const current = readLocalPasswords();
+    current[username.toLowerCase()] = password;
+    localStorage.setItem(STORAGE_KEY_LOCAL_PASSWORDS, JSON.stringify(current));
+  } catch {
+    // ignore
+  }
+}
+
+async function directPullFromGas(gasUrl: string): Promise<DatabaseState | null> {
+  if (!gasUrl || !gasUrl.startsWith('https://script.google.com/')) return null;
+  try {
+    const sep = gasUrl.includes('?') ? '&' : '?';
+    const res = await fetch(`${gasUrl}${sep}action=getState`, {
+      method: 'GET',
+      redirect: 'follow',
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (json && json.success && json.state && json.state.santri) {
+      return json.state as DatabaseState;
+    }
+  } catch {
+    // ignore network/CORS fallback
+  }
+  return null;
+}
+
+async function directPushToGas(gasUrl: string, state: DatabaseState, action = 'syncSnapshot'): Promise<boolean> {
+  if (!gasUrl || !gasUrl.startsWith('https://script.google.com/')) return false;
+  try {
+    const res = await fetch(gasUrl, {
+      method: 'POST',
+      redirect: 'follow',
+      // Gunakan text/plain agar Google Apps Script tidak memblokir preflight CORS dari browser (github.io / vercel.app)
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action, state }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const initialEnvConfig = resolveGasEnvironmentConfig(
+    INITIAL_DATABASE_STATE.pengaturan.gasWebAppUrl,
+    INITIAL_DATABASE_STATE.pengaturan.spreadsheetId
+  );
+
   const [db, setDb] = useState<DatabaseState>(() => {
     try {
       const cached = localStorage.getItem(STORAGE_KEY_DB);
-      if (cached) return JSON.parse(cached);
+      if (cached) {
+        const parsed = JSON.parse(cached) as DatabaseState;
+        const resolved = resolveGasEnvironmentConfig(
+          parsed.pengaturan?.gasWebAppUrl,
+          parsed.pengaturan?.spreadsheetId
+        );
+        if (resolved.gasWebAppUrl && parsed.pengaturan) {
+          parsed.pengaturan.gasWebAppUrl = resolved.gasWebAppUrl;
+        }
+        if (resolved.spreadsheetId && parsed.pengaturan) {
+          parsed.pengaturan.spreadsheetId = resolved.spreadsheetId;
+        }
+        return parsed;
+      }
     } catch {
       // ignore
     }
-    return INITIAL_DATABASE_STATE;
+    const clone = JSON.parse(JSON.stringify(INITIAL_DATABASE_STATE)) as DatabaseState;
+    if (initialEnvConfig.gasWebAppUrl) {
+      clone.pengaturan.gasWebAppUrl = initialEnvConfig.gasWebAppUrl;
+    }
+    if (initialEnvConfig.spreadsheetId) {
+      clone.pengaturan.spreadsheetId = initialEnvConfig.spreadsheetId;
+    }
+    return clone;
   });
+
+  const [isEnvGasConfigured, setIsEnvGasConfigured] = useState<boolean>(
+    initialEnvConfig.isEnvInjected
+  );
 
   const [authToken, setAuthToken] = useState<string | null>(() => {
     return localStorage.getItem(STORAGE_KEY_TOKEN);
@@ -123,7 +219,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (saved) return JSON.parse(saved);
       const params = new URLSearchParams(window.location.search);
       if (params.get('autostart') === '1') {
-        return INITIAL_DATABASE_STATE.users[0];
+        const adminUser = INITIAL_DATABASE_STATE.users[0];
+        localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(adminUser));
+        return adminUser;
       }
     } catch {
       // ignore
@@ -141,11 +239,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [currentPath, setCurrentPath] = useState<string>(() => {
-    const path = window.location.pathname;
-    if (path === '/' || path === '') {
-      return '/admin/dashboard';
-    }
-    return path;
+    return normalizeInternalRoute(
+      window.location.pathname,
+      window.location.search,
+      window.location.hash
+    );
   });
 
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -155,6 +253,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     message: '',
     onConfirm: () => {},
   });
+
+  const effectiveGasUrl = React.useMemo(() => {
+    const resolved = resolveGasEnvironmentConfig(
+      db.pengaturan?.gasWebAppUrl,
+      db.pengaturan?.spreadsheetId
+    );
+    return resolved.gasWebAppUrl;
+  }, [db.pengaturan?.gasWebAppUrl, db.pengaturan?.spreadsheetId]);
 
   // Sync dark mode class on <html>
   useEffect(() => {
@@ -198,9 +304,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const navigate = useCallback((path: string) => {
-    setCurrentPath(path);
+    const normalized = normalizeInternalRoute(path, '', '');
+    setCurrentPath(normalized);
     try {
-      window.history.pushState({}, '', path);
+      const browserUrl = buildBrowserHistoryUrl(
+        normalized,
+        window.location.pathname,
+        window.location.search
+      );
+      window.history.pushState({}, '', browserUrl);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch {
       // ignore in sandboxed frames
@@ -208,30 +320,78 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   useEffect(() => {
-    const onPopState = () => {
-      setCurrentPath(window.location.pathname || '/admin/dashboard');
+    const onUrlChange = () => {
+      setCurrentPath(
+        normalizeInternalRoute(
+          window.location.pathname,
+          window.location.search,
+          window.location.hash
+        )
+      );
     };
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
+    window.addEventListener('popstate', onUrlChange);
+    window.addEventListener('hashchange', onUrlChange);
+    return () => {
+      window.removeEventListener('popstate', onUrlChange);
+      window.removeEventListener('hashchange', onUrlChange);
+    };
   }, []);
 
-  // Load initial state from backend API
+  // Load initial state from backend API (Vercel / Express) + Direct Google Apps Script Auto-Sync
   useEffect(() => {
     let mounted = true;
     async function fetchInitial() {
       setIsLoading(true);
       try {
-        const res = await fetch('/api/state');
-        if (res.ok) {
-          const json = await res.json();
-          if (mounted && json.success && json.data) {
-            setDb(json.data);
-            localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(json.data));
-            setDbStatus('connected');
+        let serverHandled = false;
+        try {
+          const res = await fetch('/api/state');
+          const contentType = res.headers.get('content-type') || '';
+          if (res.ok && contentType.includes('application/json')) {
+            const json = await res.json();
+            if (mounted && json.success && json.data) {
+              const resolved = resolveGasEnvironmentConfig(
+                json.data.pengaturan?.gasWebAppUrl,
+                json.data.pengaturan?.spreadsheetId
+              );
+              if (resolved.gasWebAppUrl && json.data.pengaturan) {
+                json.data.pengaturan.gasWebAppUrl = resolved.gasWebAppUrl;
+              }
+              if (resolved.spreadsheetId && json.data.pengaturan) {
+                json.data.pengaturan.spreadsheetId = resolved.spreadsheetId;
+              }
+              if (json.envGasConfigured || resolved.isEnvInjected) {
+                setIsEnvGasConfigured(true);
+              }
+              setDb(json.data);
+              localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(json.data));
+              setDbStatus('connected');
+              serverHandled = true;
+            }
           }
+        } catch {
+          // Static hosting (github.io) does not have /api/state
         }
-      } catch {
-        if (mounted) setDbStatus('error');
+
+        // Jika di-deploy di GitHub Pages (static) atau memiliki URL GAS di client env, tarik langsung dari GAS
+        if (!serverHandled && mounted) {
+          const resolved = resolveGasEnvironmentConfig(
+            db.pengaturan?.gasWebAppUrl,
+            db.pengaturan?.spreadsheetId
+          );
+          if (resolved.gasWebAppUrl) {
+            const gasState = await directPullFromGas(resolved.gasWebAppUrl);
+            if (mounted && gasState) {
+              gasState.pengaturan.gasWebAppUrl = resolved.gasWebAppUrl;
+              if (resolved.spreadsheetId) {
+                gasState.pengaturan.spreadsheetId = resolved.spreadsheetId;
+              }
+              setDb(gasState);
+              localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(gasState));
+            }
+          }
+          setDbStatus('connected');
+        }
       } finally {
         if (mounted) setIsLoading(false);
       }
@@ -246,6 +406,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     async (nextState: DatabaseState, section?: string): Promise<boolean> => {
       setIsSaving(true);
       setDbStatus('syncing');
+
+      const resolved = resolveGasEnvironmentConfig(
+        nextState.pengaturan?.gasWebAppUrl,
+        nextState.pengaturan?.spreadsheetId
+      );
+      if (resolved.gasWebAppUrl && nextState.pengaturan) {
+        nextState.pengaturan.gasWebAppUrl = resolved.gasWebAppUrl;
+      }
+
+      // Simpan langsung di state & localStorage agar UI responsif
+      setDb(nextState);
+      localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(nextState));
+
       try {
         const headers: Record<string, string> = { 'Content-Type': 'application/json' };
         if (authToken) {
@@ -256,20 +429,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           headers,
           body: JSON.stringify({ state: nextState, section }),
         });
-        const json = await res.json();
-        if (!res.ok || !json.success) {
-          setDbStatus('error');
-          showToast('error', 'Gagal Menyimpan Data', json.error || 'Terjadi gangguan pada server.');
-          return false;
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const json = await res.json();
+          if (!res.ok || !json.success) {
+            setDbStatus('error');
+            showToast('error', 'Gagal Menyimpan Data', json.error || 'Terjadi gangguan pada server.');
+            return false;
+          }
+          // Jika server belum menyinkronkan ke GAS namun ada URL GAS di client, sinkronkan langsung
+          if (!json.gasSynced && resolved.gasWebAppUrl) {
+            await directPushToGas(resolved.gasWebAppUrl, nextState, 'syncSnapshot');
+          }
+          setDbStatus('connected');
+          return true;
         }
-        setDb(nextState);
-        localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(nextState));
+
+        // Static host fallback (github.io): langsung sinkron ke Google Apps Script
+        if (resolved.gasWebAppUrl) {
+          await directPushToGas(resolved.gasWebAppUrl, nextState, 'syncSnapshot');
+        }
         setDbStatus('connected');
         return true;
       } catch {
-        // Fallback local save if network interrupted, while notifying user
-        setDb(nextState);
-        localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(nextState));
+        // Fallback static / offline: tetap coba kirim langsung ke Google Apps Script jika tersedia
+        if (resolved.gasWebAppUrl) {
+          await directPushToGas(resolved.gasWebAppUrl, nextState, 'syncSnapshot');
+        }
         setDbStatus('connected');
         return true;
       } finally {
@@ -307,37 +493,67 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const login = useCallback(
     async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
+      const normalizedUsername = username.trim().toLowerCase();
       try {
         const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password }),
         });
-        const json = await res.json();
-        if (!res.ok || !json.success) {
-          return { success: false, error: json.error || 'Login gagal.' };
-        }
-        const user: User = json.user;
-        const token: string = json.token;
-        setCurrentUser(user);
-        setAuthToken(token);
-        localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(user));
-        localStorage.setItem(STORAGE_KEY_TOKEN, token);
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const json = await res.json();
+          if (!res.ok || !json.success) {
+            return { success: false, error: json.error || 'Login gagal.' };
+          }
+          const user: User = json.user;
+          const token: string = json.token;
+          setCurrentUser(user);
+          setAuthToken(token);
+          localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(user));
+          localStorage.setItem(STORAGE_KEY_TOKEN, token);
 
-        const targetRoute = user.role === 'ADMIN' ? '/admin/dashboard' : '/guru/dashboard';
-        navigate(targetRoute);
-        showToast('success', `Assalamu'alaikum, ${user.namaLengkap}`, 'Selamat datang di Jurnal Akademik Belajar Khot.');
-        return { success: true };
+          const targetRoute = user.role === 'ADMIN' ? '/admin/dashboard' : '/guru/dashboard';
+          navigate(targetRoute);
+          showToast('success', `Assalamu'alaikum, ${user.namaLengkap}`, 'Selamat datang di Jurnal Akademik Belajar Khot.');
+          return { success: true };
+        }
       } catch {
-        return { success: false, error: 'Gagal menghubungi server autentikasi.' };
+        // Lanjut ke autentikasi lokal/statis (untuk GitHub Pages github.io)
       }
+
+      // Fallback Autentikasi Statis (GitHub Pages / github.io)
+      const user = db.users.find((u) => u.username.toLowerCase() === normalizedUsername);
+      if (!user) {
+        return { success: false, error: 'Akun pengguna tidak ditemukan.' };
+      }
+      if (user.statusAkun !== 'Aktif') {
+        return { success: false, error: 'Akun pengguna sedang dinonaktifkan oleh Administrator.' };
+      }
+      const localPasswords = readLocalPasswords();
+      const expectedPassword =
+        localPasswords[normalizedUsername] || (user.role === 'ADMIN' ? 'admin123' : 'guru123');
+      if (password !== expectedPassword) {
+        return { success: false, error: 'Password yang Anda masukkan tidak sesuai.' };
+      }
+
+      const token = 'STATIC-TOKEN-' + Date.now();
+      setCurrentUser(user);
+      setAuthToken(token);
+      localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(user));
+      localStorage.setItem(STORAGE_KEY_TOKEN, token);
+
+      const targetRoute = user.role === 'ADMIN' ? '/admin/dashboard' : '/guru/dashboard';
+      navigate(targetRoute);
+      showToast('success', `Assalamu'alaikum, ${user.namaLengkap}`, 'Selamat datang di Jurnal Akademik Belajar Khot.');
+      return { success: true };
     },
-    [navigate, showToast]
+    [db.users, navigate, showToast]
   );
 
   const logout = useCallback(async () => {
     try {
-      if (authToken) {
+      if (authToken && !authToken.startsWith('STATIC-TOKEN-')) {
         await fetch('/api/auth/logout', {
           method: 'POST',
           headers: { Authorization: `Bearer ${authToken}` },
@@ -356,6 +572,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const resetUserPassword = useCallback(
     async (targetUserId: string, newPassword: string) => {
+      const targetUser = db.users.find((u) => u.userId === targetUserId);
+      if (targetUser) {
+        saveLocalPassword(targetUser.username, newPassword);
+      }
       try {
         const res = await fetch('/api/auth/reset-password', {
           method: 'POST',
@@ -365,19 +585,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           },
           body: JSON.stringify({ targetUserId, newPassword }),
         });
-        const json = await res.json();
-        if (!res.ok || !json.success) {
-          showToast('error', 'Gagal Reset Password', json.error);
-          return { success: false, message: json.error };
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const json = await res.json();
+          if (!res.ok || !json.success) {
+            showToast('error', 'Gagal Reset Password', json.error);
+            return { success: false, message: json.error };
+          }
+          showToast('success', 'Password Diperbarui', json.message);
+          return { success: true, message: json.message };
         }
-        showToast('success', 'Password Diperbarui', json.message);
-        return { success: true, message: json.message };
       } catch {
-        showToast('error', 'Gagal Reset Password', 'Koneksi ke server terputus.');
-        return { success: false };
+        // Fallback static mode
       }
+      const msg = `Password untuk ${targetUser?.namaLengkap || 'pengguna'} berhasil diperbarui.`;
+      showToast('success', 'Password Diperbarui', msg);
+      return { success: true, message: msg };
     },
-    [authToken, showToast]
+    [authToken, db.users, showToast]
   );
 
   // Filter Demo Data if tampilkanDataDemo is false
@@ -988,9 +1213,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [createLogEntry, db, persistStateToServer, showToast]
   );
 
-  // Google Apps Script Web App Sync
+  // Google Apps Script Web App Sync (Vercel Serverless Proxy + Direct Browser Sync Fallback)
   const syncWithGoogleSheets = useCallback(
     async (customUrl?: string): Promise<{ success: boolean; message: string }> => {
+      const targetUrl = (customUrl || effectiveGasUrl || db.pengaturan.gasWebAppUrl || '').trim();
+      if (!targetUrl || !targetUrl.startsWith('https://script.google.com/')) {
+        showToast(
+          'error',
+          'URL Google Apps Script Belum Valid',
+          'Masukkan URL Web App Google Apps Script (berawalan https://script.google.com/macros/s/.../exec) atau pasang pada Environment Variable Vercel.'
+        );
+        return { success: false, message: 'URL belum diatur' };
+      }
+
       setDbStatus('syncing');
       try {
         const res = await fetch('/api/gas/sync', {
@@ -999,29 +1234,56 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             'Content-Type': 'application/json',
             ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
           },
-          body: JSON.stringify({ gasUrl: customUrl || db.pengaturan.gasWebAppUrl }),
+          body: JSON.stringify({
+            gasUrl: targetUrl,
+            state: db,
+          }),
         });
-        const json = await res.json();
-        if (!res.ok || !json.success) {
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const json = await res.json();
+          if (!res.ok || !json.success) {
+            setDbStatus('connected');
+            showToast('error', 'Sinkronisasi Google Sheets Gagal', json.error);
+            return { success: false, message: json.error || 'Gagal sinkronisasi' };
+          }
+          const nextPengaturan = {
+            ...db.pengaturan,
+            gasWebAppUrl: targetUrl,
+            lastSyncAt: json.lastSyncAt || new Date().toISOString(),
+          };
+          const nextDb = { ...db, pengaturan: nextPengaturan };
+          setDb(nextDb);
+          localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(nextDb));
           setDbStatus('connected');
-          showToast('error', 'Sinkronisasi Google Sheets Gagal', json.error);
-          return { success: false, message: json.error || 'Gagal sinkronisasi' };
+          showToast('success', 'Sinkronisasi Berhasil', 'Data berhasil disinkronkan ke Google Sheets.');
+          return { success: true, message: 'Sinkronisasi ke Google Sheets berhasil.' };
         }
+      } catch {
+        // Fallback direct browser sync for GitHub Pages (github.io)
+      }
+
+      // Direct browser sync fallback (CORS-safe text/plain POST to GAS)
+      const ok = await directPushToGas(targetUrl, db, 'syncSnapshot');
+      if (ok) {
         const nextPengaturan = {
           ...db.pengaturan,
-          lastSyncAt: json.lastSyncAt || new Date().toISOString(),
+          gasWebAppUrl: targetUrl,
+          lastSyncAt: new Date().toISOString(),
         };
-        setDb((prev) => ({ ...prev, pengaturan: nextPengaturan }));
+        const nextDb = { ...db, pengaturan: nextPengaturan };
+        setDb(nextDb);
+        localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(nextDb));
         setDbStatus('connected');
-        showToast('success', 'Sinkronisasi Berhasil', 'Data berhasil disinkronkan ke Google Sheets.');
-        return { success: true, message: 'Sinkronisasi ke Google Sheets berhasil.' };
-      } catch {
-        setDbStatus('error');
-        showToast('error', 'Sinkronisasi Gagal', 'Tidak dapat terhubung ke endpoint Google Apps Script.');
-        return { success: false, message: 'Koneksi gagal.' };
+        showToast('success', 'Sinkronisasi Langsung Berhasil', 'Data berhasil dikirim langsung ke Google Apps Script.');
+        return { success: true, message: 'Sinkronisasi langsung berhasil.' };
       }
+
+      setDbStatus('error');
+      showToast('error', 'Sinkronisasi Gagal', 'Tidak dapat terhubung ke endpoint Google Apps Script.');
+      return { success: false, message: 'Koneksi gagal.' };
     },
-    [authToken, db.pengaturan, showToast]
+    [authToken, db, effectiveGasUrl, showToast]
   );
 
   const resetDemoDatabase = useCallback(async (): Promise<boolean> => {
@@ -1033,18 +1295,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
       });
-      const json = await res.json();
-      if (res.ok && json.success) {
-        setDb(json.data);
-        localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(json.data));
-        showToast('success', 'Database Demo Direset', 'Seluruh data demonstrasi telah dikembalikan ke kondisi awal.');
-        return true;
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && contentType.includes('application/json')) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          setDb(json.data);
+          localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(json.data));
+          showToast('success', 'Database Demo Direset', 'Seluruh data demonstrasi telah dikembalikan ke kondisi awal.');
+          return true;
+        }
       }
-      return false;
     } catch {
-      return false;
+      // Static fallback
     }
-  }, [authToken, showToast]);
+    const clone = JSON.parse(JSON.stringify(INITIAL_DATABASE_STATE)) as DatabaseState;
+    if (effectiveGasUrl) clone.pengaturan.gasWebAppUrl = effectiveGasUrl;
+    setDb(clone);
+    localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(clone));
+    showToast('success', 'Database Demo Direset', 'Seluruh data demonstrasi telah dikembalikan ke kondisi awal.');
+    return true;
+  }, [authToken, effectiveGasUrl, showToast]);
 
   return (
     <AppContext.Provider
@@ -1055,6 +1325,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isLoading,
         isSaving,
         dbStatus,
+        isEnvGasConfigured,
+        effectiveGasUrl,
         theme,
         toggleTheme,
         currentPath,

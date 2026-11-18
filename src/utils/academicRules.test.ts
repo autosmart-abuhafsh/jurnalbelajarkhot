@@ -10,6 +10,12 @@ import {
   upsertAttendanceRecord,
   generateNomorJurnal,
 } from './academicRules';
+import {
+  detectBasePathPrefix,
+  normalizeInternalRoute,
+  buildBrowserHistoryUrl,
+  resolveGasEnvironmentConfig,
+} from './deploymentConfig';
 import { Absensi, JurnalPembelajaran } from '../types';
 
 test('calculateSessionFinalScore computes weighted average accurately', () => {
@@ -144,3 +150,40 @@ test('generateNomorJurnal increments sequential journal numbers per month', () =
   ];
   assert.equal(generateNomorJurnal('2026-11-17', existing), 'JRN-202611-005');
 });
+
+test('GitHub Pages (github.io) subpath & 404 redirect routes normalize without blank screen', () => {
+  assert.equal(detectBasePathPrefix('/jurnal-belajar-khot/'), '/jurnal-belajar-khot');
+  assert.equal(detectBasePathPrefix('/jurnal-belajar-khot/admin/santri'), '/jurnal-belajar-khot');
+  assert.equal(detectBasePathPrefix('/admin/dashboard'), '');
+
+  assert.equal(normalizeInternalRoute('/jurnal-belajar-khot/'), '/admin/dashboard');
+  assert.equal(normalizeInternalRoute('/jurnal-belajar-khot/index.html'), '/admin/dashboard');
+  assert.equal(normalizeInternalRoute('/jurnal-belajar-khot/admin/pengaturan'), '/admin/pengaturan');
+  assert.equal(normalizeInternalRoute('/jurnal-belajar-khot/', '?p=/admin/rapor-bulanan'), '/admin/rapor-bulanan');
+  assert.equal(normalizeInternalRoute('/jurnal-belajar-khot/', '', '#/guru/jurnal'), '/guru/jurnal');
+
+  assert.equal(
+    buildBrowserHistoryUrl('/admin/santri', '/jurnal-belajar-khot/admin/dashboard', ''),
+    '/jurnal-belajar-khot/admin/santri'
+  );
+  assert.equal(
+    buildBrowserHistoryUrl('/admin/santri', '/admin/dashboard', '?autostart=1'),
+    '/admin/santri?autostart=1'
+  );
+});
+
+test('resolveGasEnvironmentConfig prioritizes Vercel environment variables', () => {
+  const resolved = resolveGasEnvironmentConfig(
+    'https://script.google.com/macros/s/OLD_ID/exec',
+    'OLD_SHEET',
+    {
+      GAS_WEB_APP_URL: 'https://script.google.com/macros/s/VERCEL_ENV_ID/exec',
+      GAS_SPREADSHEET_ID: 'VERCEL_SHEET_ID',
+    }
+  );
+  assert.equal(resolved.gasWebAppUrl, 'https://script.google.com/macros/s/VERCEL_ENV_ID/exec');
+  assert.equal(resolved.spreadsheetId, 'VERCEL_SHEET_ID');
+  assert.equal(resolved.isEnvInjected, true);
+  assert.equal(resolved.autoSyncEnabled, true);
+});
+

@@ -2,10 +2,40 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import fs from 'fs';
 import path from 'path';
-import {defineConfig} from 'vite';
+import {defineConfig, loadEnv} from 'vite';
 
-export default defineConfig(() => {
+export default defineConfig(({mode}) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  const resolvedGasUrl =
+    env.VITE_GAS_WEB_APP_URL ||
+    env.VITE_GOOGLE_APPS_SCRIPT_URL ||
+    env.GAS_WEB_APP_URL ||
+    env.GOOGLE_APPS_SCRIPT_URL ||
+    env.NEXT_PUBLIC_GAS_WEB_APP_URL ||
+    env.NEXT_PUBLIC_GAS_URL ||
+    process.env.VITE_GAS_WEB_APP_URL ||
+    process.env.GAS_WEB_APP_URL ||
+    process.env.GOOGLE_APPS_SCRIPT_URL ||
+    '';
+
+  const resolvedSpreadsheetId =
+    env.VITE_GAS_SPREADSHEET_ID ||
+    env.VITE_SPREADSHEET_ID ||
+    env.GAS_SPREADSHEET_ID ||
+    env.SPREADSHEET_ID ||
+    process.env.VITE_GAS_SPREADSHEET_ID ||
+    process.env.GAS_SPREADSHEET_ID ||
+    process.env.SPREADSHEET_ID ||
+    '';
+
   return {
+    // Relative base './' ensures assets load properly on both root domains (vercel.app)
+    // and repository subpaths on GitHub Pages (https://username.github.io/repo-name/)
+    base: './',
+    define: {
+      'import.meta.env.VITE_GAS_WEB_APP_URL': JSON.stringify(resolvedGasUrl),
+      'import.meta.env.VITE_GAS_SPREADSHEET_ID': JSON.stringify(resolvedSpreadsheetId),
+    },
     plugins: [
       react(),
       tailwindcss(),
@@ -42,3 +72,4 @@ export default defineConfig(() => {
     },
   };
 });
+
