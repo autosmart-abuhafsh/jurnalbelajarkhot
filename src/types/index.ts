@@ -192,6 +192,22 @@ export interface BatasPredikat {
   C: number; // default 70
 }
 
+export interface LogoConfig {
+  mode: 'vector' | 'image';
+  imageUrl?: string;
+  arabicSymbol?: string;
+  nibColor?: string;
+  showStarAndBook?: boolean;
+  frameShape?: 'rounded' | 'circle' | 'square';
+}
+
+export interface TemaConfig {
+  presetId: string;
+  warnaUtama: string;
+  warnaGradasi: string;
+  warnaAksen: string;
+}
+
 export interface PengaturanAkademik {
   namaLembaga: string;
   subJudulLembaga: string;
@@ -210,6 +226,8 @@ export interface PengaturanAkademik {
   spreadsheetId: string;
   lastSyncAt: string;
   programs: string[];
+  logoConfig?: LogoConfig;
+  temaConfig?: TemaConfig;
 }
 
 export interface DatabaseState {

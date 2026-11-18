@@ -10,6 +10,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { PengaturanAkademik } from '../types';
 import { CODE_GS_SOURCE, SETUP_GS_SOURCE } from '../utils/gasTemplates';
+import { LogoTemaCustomizer } from '../components/LogoTemaCustomizer';
 
 export const PengaturanPage: React.FC = () => {
   const {
@@ -64,7 +65,8 @@ export const PengaturanPage: React.FC = () => {
   const handleResetDemo = () => {
     askConfirm({
       title: 'Reset Data Demonstrasi ke Awal?',
-      message: 'Seluruh data demonstrasi (BK-00001 s.d. BK-00006, jurnal, absensi, nilai) akan dikembalikan ke kondisi awal.',
+      message:
+        'Seluruh data demonstrasi (BK-00001 s.d. BK-00006, jurnal, absensi, nilai) akan dikembalikan ke kondisi awal.',
       confirmLabel: 'Ya, Reset Data Demo',
       danger: true,
       onConfirm: async () => {
@@ -74,32 +76,41 @@ export const PengaturanPage: React.FC = () => {
     });
   };
 
+  const primaryColor = db.pengaturan.temaConfig?.warnaUtama || '#19432D';
+  const secondaryColor = db.pengaturan.temaConfig?.warnaGradasi || '#315B43';
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#26332A] dark:text-[#ECF3EE]">
-            Pengaturan Sistem &amp; Integrasi Database
+          <h1 className="text-xl sm:text-2xl font-bold text-[#26332A] dark:text-[#ECF3EE]">
+            Pengaturan Sistem, Kustomisasi Logo &amp; Integrasi Database
           </h1>
           <p className="text-xs text-[#6B776D] dark:text-[#A3D1B3]/80 mt-0.5">
-            Kelola identitas lembaga Belajar Khot, batas predikat nilai, serta integrasi Google Sheets &amp; Google Apps Script
+            Kelola logo portal (vektor &amp; upload gambar), tema warna, identitas lembaga Belajar Khot, serta integrasi Google Sheets
           </p>
         </div>
 
         <button
           type="button"
           onClick={handleSave}
-          className="px-5 py-2.5 rounded-lg text-xs font-semibold bg-[#19432D] hover:bg-[#315B43] text-white flex items-center gap-1.5 self-start"
+          style={{
+            background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+          }}
+          className="px-5 py-2.5 rounded-xl text-xs font-semibold text-white flex items-center justify-center gap-1.5 self-stretch sm:self-start shadow-xs"
         >
-          <Save className="w-4 h-4" />
+          <Save className="w-4 h-4 shrink-0" />
           <span>Simpan Seluruh Pengaturan</span>
         </button>
       </div>
 
+      {/* Kustomisasi Logo (Vektor & Upload Gambar) & Tema Warna Portal */}
+      <LogoTemaCustomizer compact />
+
       <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Identitas Lembaga & Parameter Akademik */}
-        <div className="lg:col-span-7 space-y-6">
-          <div className="rounded-2xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-6 space-y-4">
+        <div className="lg:col-span-7 space-y-6 min-w-0">
+          <div className="rounded-2xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-5 sm:p-6 space-y-4">
             <h2 className="text-base font-bold">1. Identitas Resmi Lembaga Pendidikan</h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
@@ -109,7 +120,7 @@ export const PengaturanPage: React.FC = () => {
                   type="text"
                   value={form.namaLembaga}
                   onChange={(e) => setForm({ ...form, namaLembaga: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
                 />
               </div>
               <div>
@@ -118,7 +129,7 @@ export const PengaturanPage: React.FC = () => {
                   type="text"
                   value={form.subJudulLembaga}
                   onChange={(e) => setForm({ ...form, subJudulLembaga: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
                 />
               </div>
               <div className="sm:col-span-2">
@@ -127,7 +138,7 @@ export const PengaturanPage: React.FC = () => {
                   type="text"
                   value={form.alamatLembaga}
                   onChange={(e) => setForm({ ...form, alamatLembaga: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
                 />
               </div>
               <div>
@@ -136,7 +147,7 @@ export const PengaturanPage: React.FC = () => {
                   type="text"
                   value={form.kepalaLembaga}
                   onChange={(e) => setForm({ ...form, kepalaLembaga: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
                 />
               </div>
               <div>
@@ -145,7 +156,7 @@ export const PengaturanPage: React.FC = () => {
                   type="text"
                   value={form.nipKepalaLembaga}
                   onChange={(e) => setForm({ ...form, nipKepalaLembaga: e.target.value })}
-                  className="w-full px-3 py-2 font-mono rounded-lg bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
+                  className="w-full px-3 py-2.5 font-mono rounded-xl bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
                 />
               </div>
               <div>
@@ -154,7 +165,7 @@ export const PengaturanPage: React.FC = () => {
                   type="text"
                   value={form.kotaPenerbitan}
                   onChange={(e) => setForm({ ...form, kotaPenerbitan: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
                 />
               </div>
               <div>
@@ -163,16 +174,16 @@ export const PengaturanPage: React.FC = () => {
                   type="text"
                   value={form.periodeAktif}
                   onChange={(e) => setForm({ ...form, periodeAktif: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
                 />
               </div>
             </div>
           </div>
 
           {/* Batas Predikat Nilai */}
-          <div className="rounded-2xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-6 space-y-4">
+          <div className="rounded-2xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-5 sm:p-6 space-y-4">
             <h2 className="text-base font-bold">2. Skala Nilai &amp; Batas Predikat Rapor</h2>
-            <div className="grid grid-cols-3 gap-4 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
               <div>
                 <label className="block font-semibold mb-1">Batas Minimal Predikat A</label>
                 <input
@@ -184,7 +195,7 @@ export const PengaturanPage: React.FC = () => {
                       batasPredikat: { ...form.batasPredikat, A: Number(e.target.value) },
                     })
                   }
-                  className="w-full px-3 py-2 font-mono font-bold rounded-lg bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
+                  className="w-full px-3 py-2.5 font-mono font-bold rounded-xl bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
                 />
                 <span className="text-[11px] text-[#6B776D]">Default: 90–100</span>
               </div>
@@ -199,7 +210,7 @@ export const PengaturanPage: React.FC = () => {
                       batasPredikat: { ...form.batasPredikat, B: Number(e.target.value) },
                     })
                   }
-                  className="w-full px-3 py-2 font-mono font-bold rounded-lg bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
+                  className="w-full px-3 py-2.5 font-mono font-bold rounded-xl bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
                 />
                 <span className="text-[11px] text-[#6B776D]">Default: 80–89</span>
               </div>
@@ -214,7 +225,7 @@ export const PengaturanPage: React.FC = () => {
                       batasPredikat: { ...form.batasPredikat, C: Number(e.target.value) },
                     })
                   }
-                  className="w-full px-3 py-2 font-mono font-bold rounded-lg bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
+                  className="w-full px-3 py-2.5 font-mono font-bold rounded-xl bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
                 />
                 <span className="text-[11px] text-[#6B776D]">Di bawah ini = D</span>
               </div>
@@ -228,7 +239,7 @@ export const PengaturanPage: React.FC = () => {
                   onChange={(e) =>
                     setForm({ ...form, izinkanGuruCetakRapor: e.target.checked })
                   }
-                  className="w-4 h-4 accent-[#19432D]"
+                  className="w-4 h-4 accent-[#19432D] shrink-0"
                 />
                 <span className="font-medium">
                   Izinkan Guru / Pengajar mencetak dan mengunduh rapor santri di kelasnya
@@ -242,7 +253,7 @@ export const PengaturanPage: React.FC = () => {
                   onChange={(e) =>
                     setForm({ ...form, tampilkanDataDemo: e.target.checked })
                   }
-                  className="w-4 h-4 accent-[#19432D]"
+                  className="w-4 h-4 accent-[#19432D] shrink-0"
                 />
                 <span className="font-medium">
                   Tampilkan Data Demonstrasi (BK-00001 s.d. BK-00006)
@@ -254,18 +265,18 @@ export const PengaturanPage: React.FC = () => {
               <label className="block text-xs font-semibold mb-1.5">
                 Daftar Program Khot ({form.programs.join(', ')})
               </label>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="text"
                   value={newProgramName}
                   onChange={(e) => setNewProgramName(e.target.value)}
                   placeholder="Tambah program baru (misal: Khot Farisi)..."
-                  className="flex-1 px-3 py-1.5 text-xs rounded-lg bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
+                  className="min-w-0 flex-1 px-3 py-2 text-xs rounded-xl bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
                 />
                 <button
                   type="button"
                   onClick={handleAddProgram}
-                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#F3F7F2] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#F3F7F2] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C] shrink-0"
                 >
                   + Tambah Program
                 </button>
@@ -275,15 +286,20 @@ export const PengaturanPage: React.FC = () => {
         </div>
 
         {/* Right: Integrasi Google Sheets & Google Apps Script */}
-        <div className="lg:col-span-5 space-y-6">
-          <div className="rounded-2xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-6 space-y-4">
-            <div className="flex items-center justify-between">
+        <div className="lg:col-span-5 space-y-6 min-w-0">
+          <div className="rounded-2xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-5 sm:p-6 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-base font-bold flex items-center gap-2">
-                <Database className="w-4 h-4 text-[#19432D] dark:text-[#A3D1B3]" />
+                <Database className="w-4 h-4 text-[#19432D] dark:text-[#A3D1B3] shrink-0" />
                 <span>3. Integrasi Google Sheets &amp; GAS</span>
               </h2>
               <span className="text-xs font-mono font-semibold text-[#3B7551] dark:text-[#A3D1B3]">
-                Status DB: {dbStatus === 'connected' ? 'Terhubung' : dbStatus === 'syncing' ? 'Sinkronisasi...' : 'Offline Fallback'}
+                Status DB:{' '}
+                {dbStatus === 'connected'
+                  ? 'Terhubung'
+                  : dbStatus === 'syncing'
+                  ? 'Sinkronisasi...'
+                  : 'Offline Fallback'}
               </span>
             </div>
 
@@ -301,7 +317,7 @@ export const PengaturanPage: React.FC = () => {
                   value={form.gasWebAppUrl}
                   onChange={(e) => setForm({ ...form, gasWebAppUrl: e.target.value })}
                   placeholder="https://script.google.com/macros/s/.../exec"
-                  className="w-full px-3 py-2 font-mono rounded-lg bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
+                  className="w-full px-3 py-2.5 font-mono rounded-xl bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
                 />
               </div>
 
@@ -311,25 +327,28 @@ export const PengaturanPage: React.FC = () => {
                   type="text"
                   value={form.spreadsheetId}
                   onChange={(e) => setForm({ ...form, spreadsheetId: e.target.value })}
-                  className="w-full px-3 py-2 font-mono rounded-lg bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
+                  className="w-full px-3 py-2.5 font-mono rounded-xl bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
                 />
               </div>
 
-              <div className="flex flex-wrap gap-2 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => syncWithGoogleSheets(form.gasWebAppUrl)}
-                  className="flex-1 py-2 px-3 rounded-lg font-semibold bg-[#19432D] hover:bg-[#315B43] text-white flex items-center justify-center gap-1.5"
+                  style={{
+                    background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+                  }}
+                  className="py-2.5 px-3 rounded-xl font-semibold text-white flex items-center justify-center gap-1.5"
                 >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Sinkronkan ke Google Sheets</span>
+                  <RefreshCw className="w-3.5 h-3.5 shrink-0" />
+                  <span>Sinkronkan ke Sheets</span>
                 </button>
                 <button
                   type="button"
                   onClick={handleResetDemo}
-                  className="py-2 px-3 rounded-lg font-semibold bg-[#F3F7F2] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C] flex items-center gap-1.5"
+                  className="py-2.5 px-3 rounded-xl font-semibold bg-[#F3F7F2] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C] flex items-center justify-center gap-1.5"
                 >
-                  <RotateCcw className="w-3.5 h-3.5" />
+                  <RotateCcw className="w-3.5 h-3.5 shrink-0" />
                   <span>Reset Data Demo</span>
                 </button>
               </div>
@@ -338,15 +357,16 @@ export const PengaturanPage: React.FC = () => {
             {/* File Code.gs & Setup.gs Viewer/Downloader */}
             <div className="pt-4 border-t border-[#E3EAE3] dark:border-[#24382C] space-y-3">
               <p className="text-xs font-semibold">
-                File Backend Google Apps Script (<code className="font-mono">Setup.gs</code> &amp; <code className="font-mono">Code.gs</code>):
+                File Backend Google Apps Script (<code className="font-mono">Setup.gs</code> &amp;{' '}
+                <code className="font-mono">Code.gs</code>):
               </p>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() =>
                     setActiveScriptTab((t) => (t === 'setup' ? 'none' : 'setup'))
                   }
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#F3F7F2] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
+                  className="px-3 py-2 rounded-xl text-xs font-semibold bg-[#F3F7F2] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
                 >
                   {activeScriptTab === 'setup' ? 'Tutup Setup.gs' : 'Lihat Setup.gs'}
                 </button>
@@ -355,24 +375,24 @@ export const PengaturanPage: React.FC = () => {
                   onClick={() =>
                     setActiveScriptTab((t) => (t === 'code' ? 'none' : 'code'))
                   }
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#F3F7F2] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
+                  className="px-3 py-2 rounded-xl text-xs font-semibold bg-[#F3F7F2] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
                 >
                   {activeScriptTab === 'code' ? 'Tutup Code.gs' : 'Lihat Code.gs'}
                 </button>
                 <button
                   type="button"
                   onClick={() => handleDownloadScript(SETUP_GS_SOURCE, 'Setup.gs')}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#F3F7F2] dark:bg-[#1B2B22] flex items-center gap-1"
+                  className="px-3 py-2 rounded-xl text-xs font-semibold bg-[#F3F7F2] dark:bg-[#1B2B22] flex items-center justify-center gap-1"
                 >
-                  <Download className="w-3.5 h-3.5" />
+                  <Download className="w-3.5 h-3.5 shrink-0" />
                   <span>Setup.gs</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleDownloadScript(CODE_GS_SOURCE, 'Code.gs')}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#F3F7F2] dark:bg-[#1B2B22] flex items-center gap-1"
+                  className="px-3 py-2 rounded-xl text-xs font-semibold bg-[#F3F7F2] dark:bg-[#1B2B22] flex items-center justify-center gap-1"
                 >
-                  <Download className="w-3.5 h-3.5" />
+                  <Download className="w-3.5 h-3.5 shrink-0" />
                   <span>Code.gs</span>
                 </button>
               </div>

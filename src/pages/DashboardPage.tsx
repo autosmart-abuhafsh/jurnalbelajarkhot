@@ -189,146 +189,152 @@ export const DashboardPage: React.FC = () => {
     });
   }, [db.pengaturan.batasPredikat, scopedPenilaian, visibleJurnal, visibleKelas, visibleSantri]);
 
+  const primaryColor = db.pengaturan.temaConfig?.warnaUtama || '#19432D';
+  const secondaryColor = db.pengaturan.temaConfig?.warnaGradasi || '#315B43';
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* A. Welcome Section & Quick Access */}
-      <section className="rounded-2xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-6 sm:p-8">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div>
+      <section className="rounded-2xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-5 sm:p-7">
+        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
+          <div className="min-w-0">
             <p className="text-xs font-medium text-[#6B776D] dark:text-[#A3D1B3]">
               {formatDateLongId(todayStr)} · {db.pengaturan.periodeAktif}
             </p>
-            <h1 className="mt-1.5 text-2xl sm:text-3xl font-bold text-[#19432D] dark:text-[#ECF3EE] tracking-tight">
+            <h1 className="mt-1.5 text-xl sm:text-2xl lg:text-3xl font-bold text-[#19432D] dark:text-[#ECF3EE] tracking-tight">
               Assalamu&apos;alaikum, {currentUser?.namaLengkap || 'Ustadz'}.
             </h1>
-            <p className="mt-1 text-sm text-[#6B776D] dark:text-[#A3D1B3]/85">
+            <p className="mt-1 text-xs sm:text-sm text-[#6B776D] dark:text-[#A3D1B3]/85 leading-relaxed">
               Selamat datang di Jurnal Akademik Belajar Khot. Pantau perkembangan menulis khot,
               kehadiran, dan rapor santri secara terstruktur.
             </p>
           </div>
 
-          {/* E. Akses Cepat */}
-          <div className="flex flex-wrap items-center gap-2.5">
+          {/* E. Akses Cepat - Responsive 2-col grid on mobile, flex row on tablet/desktop */}
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={() => navigate(`${rolePrefix}/jurnal/add`)}
-              className="px-4 py-2.5 rounded-lg text-xs font-semibold text-white bg-[#19432D] hover:bg-[#315B43] transition-colors flex items-center gap-1.5 whitespace-nowrap"
+              style={{
+                background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+              }}
+              className="col-span-2 sm:col-span-1 px-4 py-2.5 rounded-xl text-xs font-semibold text-white transition-opacity hover:opacity-95 flex items-center justify-center gap-1.5 whitespace-nowrap shadow-xs"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4 shrink-0" />
               <span>+ Tambah Jurnal</span>
             </button>
             <button
               type="button"
               onClick={() => navigate(`${rolePrefix}/absensi`)}
-              className="px-3.5 py-2.5 rounded-lg text-xs font-semibold text-[#19432D] dark:text-[#ECF3EE] bg-[#F3F7F2] dark:bg-[#1B2B22] hover:bg-[#E3EAE3] dark:hover:bg-[#24382C] border border-[#E3EAE3] dark:border-[#24382C] transition-colors flex items-center gap-1.5 whitespace-nowrap"
+              className="px-3.5 py-2.5 rounded-xl text-xs font-semibold text-[#19432D] dark:text-[#ECF3EE] bg-[#F3F7F2] dark:bg-[#1B2B22] hover:bg-[#E3EAE3] dark:hover:bg-[#24382C] border border-[#E3EAE3] dark:border-[#24382C] transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap"
             >
-              <ClipboardCheck className="w-4 h-4" />
-              <span>+ Input Absensi</span>
+              <ClipboardCheck className="w-4 h-4 shrink-0" />
+              <span>Input Absensi</span>
             </button>
             <button
               type="button"
               onClick={() => navigate(`${rolePrefix}/penilaian`)}
-              className="px-3.5 py-2.5 rounded-lg text-xs font-semibold text-[#19432D] dark:text-[#ECF3EE] bg-[#F3F7F2] dark:bg-[#1B2B22] hover:bg-[#E3EAE3] dark:hover:bg-[#24382C] border border-[#E3EAE3] dark:border-[#24382C] transition-colors flex items-center gap-1.5 whitespace-nowrap"
+              className="px-3.5 py-2.5 rounded-xl text-xs font-semibold text-[#19432D] dark:text-[#ECF3EE] bg-[#F3F7F2] dark:bg-[#1B2B22] hover:bg-[#E3EAE3] dark:hover:bg-[#24382C] border border-[#E3EAE3] dark:border-[#24382C] transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap"
             >
-              <Award className="w-4 h-4" />
-              <span>+ Input Nilai</span>
+              <Award className="w-4 h-4 shrink-0" />
+              <span>Input Nilai</span>
             </button>
             <button
               type="button"
               onClick={() => navigate(`${rolePrefix}/rekap-nilai`)}
-              className="px-3.5 py-2.5 rounded-lg text-xs font-semibold text-[#19432D] dark:text-[#ECF3EE] bg-[#F3F7F2] dark:bg-[#1B2B22] hover:bg-[#E3EAE3] dark:hover:bg-[#24382C] border border-[#E3EAE3] dark:border-[#24382C] transition-colors flex items-center gap-1.5 whitespace-nowrap"
+              className="px-3.5 py-2.5 rounded-xl text-xs font-semibold text-[#19432D] dark:text-[#ECF3EE] bg-[#F3F7F2] dark:bg-[#1B2B22] hover:bg-[#E3EAE3] dark:hover:bg-[#24382C] border border-[#E3EAE3] dark:border-[#24382C] transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap"
             >
-              <BarChart3 className="w-4 h-4" />
-              <span>Lihat Rekap Nilai</span>
+              <BarChart3 className="w-4 h-4 shrink-0" />
+              <span>Rekap Nilai</span>
             </button>
             <button
               type="button"
               onClick={() => navigate(isAdmin ? '/admin/rapor-bulanan' : '/guru/rapor')}
-              className="px-3.5 py-2.5 rounded-lg text-xs font-semibold text-[#19432D] dark:text-[#ECF3EE] bg-[#F3F7F2] dark:bg-[#1B2B22] hover:bg-[#E3EAE3] dark:hover:bg-[#24382C] border border-[#E3EAE3] dark:border-[#24382C] transition-colors flex items-center gap-1.5 whitespace-nowrap"
+              className="px-3.5 py-2.5 rounded-xl text-xs font-semibold text-[#19432D] dark:text-[#ECF3EE] bg-[#F3F7F2] dark:bg-[#1B2B22] hover:bg-[#E3EAE3] dark:hover:bg-[#24382C] border border-[#E3EAE3] dark:border-[#24382C] transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap"
             >
-              <Printer className="w-4 h-4" />
+              <Printer className="w-4 h-4 shrink-0" />
               <span>Cetak Rapor</span>
             </button>
           </div>
         </div>
       </section>
 
-      {/* B. Statistik Akademik (6 Kartu) */}
-      <section aria-label="Statistik Akademik" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <div className="rounded-xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-5">
-          <div className="flex items-center justify-between text-[#6B776D] dark:text-[#A3D1B3]">
-            <span className="text-xs font-medium">Total Santri Aktif</span>
-            <Users className="w-4 h-4 text-[#19432D] dark:text-[#A3D1B3]" />
+      {/* B. Statistik Akademik (6 Kartu - 2 kolom di HP, 3 di Tablet, 6 di Desktop) */}
+      <section aria-label="Statistik Akademik" className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
+        <div className="rounded-xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-2 text-[#6B776D] dark:text-[#A3D1B3]">
+            <span className="text-xs font-medium">Santri Aktif</span>
+            <Users className="w-4 h-4 text-[#19432D] dark:text-[#A3D1B3] shrink-0" />
           </div>
-          <p className="mt-3 text-2xl font-bold tabular-nums text-[#26332A] dark:text-[#ECF3EE]">
+          <p className="mt-2.5 text-xl sm:text-2xl font-bold tabular-nums text-[#26332A] dark:text-[#ECF3EE]">
             {totalSantriAktif}
           </p>
-          <p className="mt-1 text-xs text-[#6B776D] dark:text-[#A3D1B3]/75">
+          <p className="mt-1 text-[11px] sm:text-xs text-[#6B776D] dark:text-[#A3D1B3]/75">
             Dari {visibleKelas.length} kelas aktif
           </p>
         </div>
 
-        <div className="rounded-xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-5">
-          <div className="flex items-center justify-between text-[#6B776D] dark:text-[#A3D1B3]">
-            <span className="text-xs font-medium">Pertemuan Bulan Ini</span>
-            <Calendar className="w-4 h-4 text-[#19432D] dark:text-[#A3D1B3]" />
+        <div className="rounded-xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-2 text-[#6B776D] dark:text-[#A3D1B3]">
+            <span className="text-xs font-medium">Sesi Bulan Ini</span>
+            <Calendar className="w-4 h-4 text-[#19432D] dark:text-[#A3D1B3] shrink-0" />
           </div>
-          <p className="mt-3 text-2xl font-bold tabular-nums text-[#26332A] dark:text-[#ECF3EE]">
+          <p className="mt-2.5 text-xl sm:text-2xl font-bold tabular-nums text-[#26332A] dark:text-[#ECF3EE]">
             {jurnalBulanIni.length}
           </p>
-          <p className="mt-1 text-xs text-[#6B776D] dark:text-[#A3D1B3]/75">
+          <p className="mt-1 text-[11px] sm:text-xs text-[#6B776D] dark:text-[#A3D1B3]/75">
             Total {visibleJurnal.length} jurnal tercatat
           </p>
         </div>
 
-        <div className="rounded-xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-5">
-          <div className="flex items-center justify-between text-[#6B776D] dark:text-[#A3D1B3]">
-            <span className="text-xs font-medium">Kehadiran Bulan Ini</span>
-            <CheckCircle2 className="w-4 h-4 text-[#3B7551]" />
+        <div className="rounded-xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-2 text-[#6B776D] dark:text-[#A3D1B3]">
+            <span className="text-xs font-medium">Kehadiran</span>
+            <CheckCircle2 className="w-4 h-4 text-[#3B7551] shrink-0" />
           </div>
-          <p className="mt-3 text-2xl font-bold tabular-nums text-[#3B7551] dark:text-[#A3D1B3]">
+          <p className="mt-2.5 text-xl sm:text-2xl font-bold tabular-nums text-[#3B7551] dark:text-[#A3D1B3]">
             {persentaseKehadiranBulanIni}%
           </p>
-          <p className="mt-1 text-xs text-[#6B776D] dark:text-[#A3D1B3]/75">
-            {absensiBulanIni.filter((a) => a.statusKehadiran === 'Hadir').length} hadir dari {absensiBulanIni.length} catatan
+          <p className="mt-1 text-[11px] sm:text-xs text-[#6B776D] dark:text-[#A3D1B3]/75">
+            {absensiBulanIni.filter((a) => a.statusKehadiran === 'Hadir').length}/{absensiBulanIni.length} hadir
           </p>
         </div>
 
-        <div className="rounded-xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-5">
-          <div className="flex items-center justify-between text-[#6B776D] dark:text-[#A3D1B3]">
-            <span className="text-xs font-medium">Rata-rata Nilai Santri</span>
-            <Award className="w-4 h-4 text-[#19432D] dark:text-[#A3D1B3]" />
+        <div className="rounded-xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-2 text-[#6B776D] dark:text-[#A3D1B3]">
+            <span className="text-xs font-medium">Rata-rata Nilai</span>
+            <Award className="w-4 h-4 text-[#19432D] dark:text-[#A3D1B3] shrink-0" />
           </div>
-          <p className="mt-3 text-2xl font-bold tabular-nums text-[#26332A] dark:text-[#ECF3EE]">
+          <p className="mt-2.5 text-xl sm:text-2xl font-bold tabular-nums text-[#26332A] dark:text-[#ECF3EE]">
             {rataRataNilaiKeseluruhan !== null ? rataRataNilaiKeseluruhan : '-'}
           </p>
-          <p className="mt-1 text-xs text-[#6B776D] dark:text-[#A3D1B3]/75">
+          <p className="mt-1 text-[11px] sm:text-xs text-[#6B776D] dark:text-[#A3D1B3]/75">
             Predikat {getGradePredicate(rataRataNilaiKeseluruhan, db.pengaturan.batasPredikat)}
           </p>
         </div>
 
-        <div className="rounded-xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-5">
-          <div className="flex items-center justify-between text-[#6B776D] dark:text-[#A3D1B3]">
+        <div className="rounded-xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-2 text-[#6B776D] dark:text-[#A3D1B3]">
             <span className="text-xs font-medium">Hadir Hari Ini</span>
-            <UserCheck className="w-4 h-4 text-[#3B7551]" />
+            <UserCheck className="w-4 h-4 text-[#3B7551] shrink-0" />
           </div>
-          <p className="mt-3 text-2xl font-bold tabular-nums text-[#3B7551] dark:text-[#A3D1B3]">
+          <p className="mt-2.5 text-xl sm:text-2xl font-bold tabular-nums text-[#3B7551] dark:text-[#A3D1B3]">
             {hadirHariIni}
           </p>
-          <p className="mt-1 text-xs text-[#6B776D] dark:text-[#A3D1B3]/75">
-            Tanggal {formatDateShortId(latestDate)}
+          <p className="mt-1 text-[11px] sm:text-xs text-[#6B776D] dark:text-[#A3D1B3]/75">
+            Tgl {formatDateShortId(latestDate)}
           </p>
         </div>
 
-        <div className="rounded-xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-5">
-          <div className="flex items-center justify-between text-[#6B776D] dark:text-[#A3D1B3]">
-            <span className="text-xs font-medium">Tidak Hadir Hari Ini</span>
-            <UserX className="w-4 h-4 text-[#A06A18]" />
+        <div className="rounded-xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-2 text-[#6B776D] dark:text-[#A3D1B3]">
+            <span className="text-xs font-medium">Tidak Hadir</span>
+            <UserX className="w-4 h-4 text-[#A06A18] shrink-0" />
           </div>
-          <p className="mt-3 text-2xl font-bold tabular-nums text-[#A06A18]">
+          <p className="mt-2.5 text-xl sm:text-2xl font-bold tabular-nums text-[#A06A18]">
             {tidakHadirHariIni}
           </p>
-          <p className="mt-1 text-xs text-[#6B776D] dark:text-[#A3D1B3]/75">
+          <p className="mt-1 text-[11px] sm:text-xs text-[#6B776D] dark:text-[#A3D1B3]/75">
             Izin / Sakit / Alpa
           </p>
         </div>
@@ -337,8 +343,8 @@ export const DashboardPage: React.FC = () => {
       {/* C. Grafik Akademik (Real Database Data) */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Grafik 1: Perkembangan Rata-rata Nilai per Bulan & Kelas */}
-        <div className="lg:col-span-7 rounded-2xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-6">
-          <div className="flex items-center justify-between mb-6">
+        <div className="lg:col-span-7 rounded-2xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-5 sm:p-6">
+          <div className="flex items-center justify-between gap-3 mb-5">
             <div>
               <h2 className="text-base font-bold text-[#26332A] dark:text-[#ECF3EE]">
                 Perkembangan Rata-rata Nilai &amp; Kelas
@@ -350,7 +356,7 @@ export const DashboardPage: React.FC = () => {
             <button
               type="button"
               onClick={() => navigate(`${rolePrefix}/rekap-nilai`)}
-              className="text-xs font-semibold text-[#19432D] dark:text-[#A3D1B3] hover:underline flex items-center gap-1"
+              className="text-xs font-semibold text-[#19432D] dark:text-[#A3D1B3] hover:underline flex items-center gap-1 shrink-0"
             >
               <span>Detail Rekap</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -358,7 +364,7 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           {/* Monthly Trend Visual Bars */}
-          <div className="grid grid-cols-3 gap-4 pb-6 border-b border-[#E3EAE3] dark:border-[#24382C]">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pb-6 border-b border-[#E3EAE3] dark:border-[#24382C]">
             {monthlyScoreSeries.map((m) => (
               <div key={m.key} className="p-4 rounded-xl bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]">
                 <p className="text-xs font-medium text-[#6B776D] dark:text-[#A3D1B3]">{m.label}</p>

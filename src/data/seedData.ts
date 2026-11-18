@@ -1546,5 +1546,19 @@ export const INITIAL_DATABASE_STATE: DatabaseState = {
     spreadsheetId: '1BelajarKhotMasterSheet_AcademicDB2026',
     lastSyncAt: '2026-11-17T09:30:00Z',
     programs: ['Khot Naskhi', "Khot Riq'ah", 'Khot Tsuluts', 'Khot Diwani'],
+    logoConfig: {
+      mode: 'vector',
+      imageUrl: '',
+      arabicSymbol: 'خ',
+      nibColor: '#E5B84B',
+      showStarAndBook: true,
+      frameShape: 'rounded',
+    },
+    temaConfig: {
+      presetId: 'hijau-hutan',
+      warnaUtama: '#19432D',
+      warnaGradasi: '#315B43',
+      warnaAksen: '#A3D1B3',
+    },
   },
 };

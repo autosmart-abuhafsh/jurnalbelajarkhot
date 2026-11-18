@@ -169,19 +169,19 @@ export const RaporHarianPage: React.FC = () => {
     return (
       <div
         key={santriObj.santriId}
-        className={`print-container bg-white text-[#111827] border border-[#E3EAE3] rounded-2xl p-8 sm:p-10 max-w-[210mm] mx-auto shadow-sm ${
+        className={`print-container bg-white text-[#111827] border border-[#E3EAE3] rounded-2xl p-4 sm:p-8 md:p-10 max-w-[210mm] mx-auto shadow-sm ${
           isBatchItem ? 'page-break-after mb-8' : ''
         }`}
       >
         {/* Kepala Rapor */}
-        <div className="flex items-center justify-between pb-5 border-b-2 border-[#19432D]">
+        <div className="flex flex-col sm:flex-row print:flex-row sm:items-center print:items-center justify-between gap-3 pb-4 sm:pb-5 border-b-2 border-[#19432D]">
           <LogoBelajarKhot
             size="lg"
             variant="print"
             subtitle={db.pengaturan.subJudulLembaga}
           />
-          <div className="text-right">
-            <h2 className="text-lg font-extrabold tracking-tight text-[#19432D]">
+          <div className="text-left sm:text-right print:text-right">
+            <h2 className="text-base sm:text-lg font-extrabold tracking-tight text-[#19432D]">
               RAPOR PENILAIAN HARIAN
             </h2>
             <p className="text-xs font-mono text-[#315B43] mt-0.5">
@@ -194,39 +194,39 @@ export const RaporHarianPage: React.FC = () => {
         </div>
 
         {/* Identitas Santri */}
-        <div className="grid grid-cols-2 gap-x-8 gap-y-2 my-5 p-4 rounded-xl bg-[#FAFCF9] border border-[#E3EAE3] text-xs">
-          <div className="flex justify-between">
+        <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-x-8 gap-y-2 my-4 sm:my-5 p-3.5 sm:p-4 rounded-xl bg-[#FAFCF9] border border-[#E3EAE3] text-xs">
+          <div className="flex justify-between gap-2">
             <span className="text-[#6B776D]">Nama Lengkap Santri:</span>
-            <span className="font-bold text-[#26332A]">{santriObj.namaLengkap}</span>
+            <span className="font-bold text-[#26332A] text-right">{santriObj.namaLengkap}</span>
           </div>
-          <div className="flex justify-between">
+          <div className="flex justify-between gap-2">
             <span className="text-[#6B776D]">Program Khot:</span>
-            <span className="font-semibold text-[#26332A]">{santriObj.programKhot}</span>
+            <span className="font-semibold text-[#26332A] text-right">{santriObj.programKhot}</span>
           </div>
-          <div className="flex justify-between">
+          <div className="flex justify-between gap-2">
             <span className="text-[#6B776D]">ID Member:</span>
-            <span className="font-mono font-semibold text-[#26332A]">{santriObj.memberId}</span>
+            <span className="font-mono font-semibold text-[#26332A] text-right">{santriObj.memberId}</span>
           </div>
-          <div className="flex justify-between">
+          <div className="flex justify-between gap-2">
             <span className="text-[#6B776D]">Metode Pembelajaran:</span>
-            <span className="font-semibold text-[#26332A]">{santriObj.metodePembelajaran}</span>
+            <span className="font-semibold text-[#26332A] text-right">{santriObj.metodePembelajaran}</span>
           </div>
-          <div className="flex justify-between">
+          <div className="flex justify-between gap-2">
             <span className="text-[#6B776D]">Kelas / Kelompok:</span>
-            <span className="font-semibold text-[#26332A]">{santriObj.namaKelas}</span>
+            <span className="font-semibold text-[#26332A] text-right">{santriObj.namaKelas}</span>
           </div>
-          <div className="flex justify-between">
+          <div className="flex justify-between gap-2">
             <span className="text-[#6B776D]">Guru Pengajar:</span>
-            <span className="font-semibold text-[#26332A]">{currentJurnal.namaGuru}</span>
+            <span className="font-semibold text-[#26332A] text-right">{currentJurnal.namaGuru}</span>
           </div>
         </div>
 
         {/* Tabel Aspek Penilaian */}
-        <div className="my-5">
+        <div className="my-4 sm:my-5 overflow-x-auto">
           <h3 className="text-xs font-bold uppercase tracking-wider text-[#19432D] mb-2">
             I. Rincian Aspek Penilaian Menulis Khot
           </h3>
-          <table className="w-full text-left border-collapse border border-[#E3EAE3] text-xs">
+          <table className="w-full min-w-[480px] text-left border-collapse border border-[#E3EAE3] text-xs">
             <thead>
               <tr className="bg-[#19432D] text-white">
                 <th className="py-2.5 px-3 border border-[#19432D] w-10 text-center">No</th>
@@ -312,9 +312,9 @@ export const RaporHarianPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Control Header */}
-      <div className="no-print flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div className="no-print flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3.5">
         <div>
-          <h1 className="text-2xl font-bold text-[#26332A] dark:text-[#ECF3EE]">
+          <h1 className="text-xl sm:text-2xl font-bold text-[#26332A] dark:text-[#ECF3EE]">
             Modul Rapor Penilaian Harian
           </h1>
           <p className="text-xs text-[#6B776D] dark:text-[#A3D1B3]/80 mt-0.5">
@@ -322,46 +322,46 @@ export const RaporHarianPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
           {currentJurnal && (
             <button
               type="button"
               onClick={() => navigate(`${rolePrefix}/jurnal/${currentJurnal.jurnalId}`)}
-              className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-[#F3F7F2] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C] flex items-center gap-1.5"
+              className="px-3 py-2 rounded-xl text-xs font-semibold bg-[#F3F7F2] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C] flex items-center justify-center gap-1.5"
             >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span>Edit Data Penilaian</span>
+              <Edit3 className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">Edit Penilaian</span>
             </button>
           )}
           <button
             type="button"
             onClick={handleSaveArchive}
-            className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-[#F3F7F2] dark:bg-[#1B2B22] text-[#19432D] dark:text-[#A3D1B3] border border-[#E3EAE3] dark:border-[#24382C] flex items-center gap-1.5"
+            className="px-3 py-2 rounded-xl text-xs font-semibold bg-[#F3F7F2] dark:bg-[#1B2B22] text-[#19432D] dark:text-[#A3D1B3] border border-[#E3EAE3] dark:border-[#24382C] flex items-center justify-center gap-1.5"
           >
-            <Save className="w-3.5 h-3.5" />
-            <span>Simpan ke Arsip Rapor</span>
+            <Save className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">Simpan Arsip</span>
           </button>
           <button
             type="button"
             onClick={() => {
               setBatchPrintAllClass((b) => !b);
             }}
-            className={`px-3.5 py-2 rounded-lg text-xs font-semibold border border-[#E3EAE3] dark:border-[#24382C] flex items-center gap-1.5 ${
+            className={`px-3 py-2 rounded-xl text-xs font-semibold border border-[#E3EAE3] dark:border-[#24382C] flex items-center justify-center gap-1.5 ${
               batchPrintAllClass
                 ? 'bg-[#315B43] text-white'
                 : 'bg-[#FFFFFF] dark:bg-[#142019] text-[#26332A] dark:text-[#ECF3EE]'
             }`}
           >
-            <Users className="w-3.5 h-3.5" />
-            <span>{batchPrintAllClass ? 'Mode: Semua Santri Sekaligus' : 'Cetak Beberapa Santri Sekaligus'}</span>
+            <Users className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">{batchPrintAllClass ? 'Mode: Semua Santri' : 'Cetak Semua Santri'}</span>
           </button>
           <button
             type="button"
             onClick={() => window.print()}
-            className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#19432D] hover:bg-[#315B43] text-white flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#19432D] hover:bg-[#315B43] text-white flex items-center justify-center gap-1.5 shadow-sm"
           >
-            <Printer className="w-3.5 h-3.5" />
-            <span>Cetak / Simpan PDF (A4)</span>
+            <Printer className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">Cetak / PDF (A4)</span>
           </button>
         </div>
       </div>
