@@ -1542,7 +1542,8 @@ export const INITIAL_DATABASE_STATE: DatabaseState = {
     },
     izinkanGuruCetakRapor: true,
     tampilkanDataDemo: true,
-    gasWebAppUrl: '',
+    gasWebAppUrl:
+      'https://script.google.com/macros/s/AKfycbwstWGT2UctpWEG9HbaF1mdHeNQ2P0NQuUP_3cCriwwCgkifVwqx--qRHXIIMyCXq4vww/exec',
     spreadsheetId: '1BelajarKhotMasterSheet_AcademicDB2026',
     lastSyncAt: '2026-11-17T09:30:00Z',
     programs: ['Khot Naskhi', "Khot Riq'ah", 'Khot Tsuluts', 'Khot Diwani'],

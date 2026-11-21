@@ -185,8 +185,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const cached = localStorage.getItem(STORAGE_KEY_DB);
       if (cached) {
         const parsed = JSON.parse(cached) as DatabaseState;
+        const storedGasUrl =
+          !parsed.pengaturan?.gasWebAppUrl ||
+          parsed.pengaturan.gasWebAppUrl.includes('YOUR_DEPLOYMENT_ID')
+            ? INITIAL_DATABASE_STATE.pengaturan.gasWebAppUrl
+            : parsed.pengaturan.gasWebAppUrl;
         const resolved = resolveGasEnvironmentConfig(
-          urlPairedGas || parsed.pengaturan?.gasWebAppUrl,
+          urlPairedGas || storedGasUrl,
           parsed.pengaturan?.spreadsheetId
         );
         if (resolved.gasWebAppUrl && parsed.pengaturan) {
