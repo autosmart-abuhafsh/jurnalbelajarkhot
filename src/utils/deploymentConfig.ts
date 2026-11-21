@@ -1,7 +1,7 @@
 /**
  * Utilitas Konfigurasi Deployment (GitHub Pages / github.io, Vercel.app, & Google Apps Script Env)
  * Memastikan routing SPA tidak pernah blank putih di sub-path repository github.io
- * serta membaca Environment Variable Vercel secara otomatis.
+ * serta membaca Environment Variable Vercel dan parameter sinkronisasi lintas perangkat (HP & PC).
  */
 
 export interface DeploymentEnvConfig {
@@ -30,7 +30,7 @@ export function detectBasePathPrefix(pathname: string): string {
     return '';
   }
 
-  const clean = pathname.replace(/\/index\.html$/, '') || '/';
+  const clean = pathname.replace(/\/index\.html$/, '').replace(/\/+$/, '') || '/';
   if (clean === '/') return '';
 
   // Jika sudah langsung diawali rute internal (/admin, /guru, /login, /print), tidak ada prefix repo
@@ -78,7 +78,7 @@ export function normalizeInternalRoute(
     }
   }
 
-  // 2. Dukung hash routing (#/admin/dashboard) jika digunakan di github.io
+  // 2. Dukung hash routing (#/admin/dashboard) untuk GitHub Pages (github.io)
   if (hash && hash.startsWith('#/')) {
     const hashRoute = hash.slice(1).split('?')[0];
     if (hashRoute) {
@@ -118,25 +118,53 @@ export function normalizeInternalRoute(
 }
 
 /**
- * Membentuk URL browser untuk history.pushState dengan mempertahankan base path repository
- * apabila di-host di sub-path GitHub Pages.
+ * Membentuk URL browser untuk history.pushState.
+ * - Jika aplikasi berjalan di sub-path repository GitHub Pages (basePrefix !== '') atau menggunakan hash routing,
+ *   kita menjaga pathname tetap di root repository (`${basePrefix}/`) dan menaruh rute di hash (`#${normalizedTarget}`)
+ *   agar path relatif `./assets/...` tidak pernah rusak dan refresh di HP/PC tidak pernah 404 / blank putih.
+ * - Jika berjalan di root domain (Vercel.app / localhost), gunakan clean path `${normalizedTarget}`.
  */
 export function buildBrowserHistoryUrl(
   internalPath: string,
   currentPathname: string,
-  currentSearch = ''
+  currentSearch = '',
+  useHashForSubpath = false
 ): string {
   const basePrefix = detectBasePathPrefix(currentPathname);
   const normalizedTarget = internalPath.startsWith('/') ? internalPath : '/' + internalPath;
 
-  // Pertahankan query autostart=1 jika ada
+  // Pertahankan query autostart=1 atau gas=... jika ada, hapus parameter redirect sementara p / route
   const params = new URLSearchParams(currentSearch);
   params.delete('p');
   params.delete('route');
   const queryString = params.toString();
 
+  if (useHashForSubpath && basePrefix) {
+    const rootRepoPath = `${basePrefix}/`;
+    const queryPart = queryString ? `?${queryString}` : '';
+    return `${rootRepoPath}${queryPart}#${normalizedTarget}`;
+  }
+
   const fullPath = `${basePrefix}${normalizedTarget}` || '/';
   return queryString ? `${fullPath}?${queryString}` : fullPath;
+}
+
+/**
+ * Mengekstrak URL Google Apps Script dari query parameter (?gas=https://script.google.com/...)
+ * untuk memudahkan pairing sinkronisasi instan antara PC dan HP.
+ */
+export function extractGasUrlFromSearch(search: string): string {
+  if (!search) return '';
+  try {
+    const params = new URLSearchParams(search);
+    const candidate = (params.get('gas') || params.get('gasUrl') || '').trim();
+    if (candidate.startsWith('https://script.google.com/')) {
+      return candidate;
+    }
+  } catch {
+    // ignore
+  }
+  return '';
 }
 
 /**
@@ -150,7 +178,10 @@ export function resolveGasEnvironmentConfig(
 ): DeploymentEnvConfig {
   let metaEnv: Record<string, string | undefined> = {};
   try {
-    if (typeof import.meta !== 'undefined' && (import.meta as unknown as { env?: Record<string, string | undefined> }).env) {
+    if (
+      typeof import.meta !== 'undefined' &&
+      (import.meta as unknown as { env?: Record<string, string | undefined> }).env
+    ) {
       metaEnv = (import.meta as unknown as { env: Record<string, string | undefined> }).env;
     }
   } catch {

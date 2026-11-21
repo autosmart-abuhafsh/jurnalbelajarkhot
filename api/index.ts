@@ -303,16 +303,30 @@ app.post('/api/auth/reset-password', (req, res) => {
   res.json({ success: true, message: `Password untuk ${targetUser.namaLengkap} berhasil diperbarui.` });
 });
 
-app.get('/api/state', async (_req, res) => {
+app.get('/api/state', async (req, res) => {
   let db = readDb();
-  const targetGasUrl = getEnvGasUrl() || db.pengaturan?.gasWebAppUrl;
+  const envGasUrl = getEnvGasUrl();
+  const envSheetId = getEnvSpreadsheetId();
+  const queryGasUrl = typeof req.query.gasUrl === 'string' ? req.query.gasUrl.trim() : '';
+
+  if (envGasUrl && db.pengaturan) db.pengaturan.gasWebAppUrl = envGasUrl;
+  if (envSheetId && db.pengaturan) db.pengaturan.spreadsheetId = envSheetId;
+  if (!db.pengaturan?.gasWebAppUrl && queryGasUrl && queryGasUrl.startsWith('https://script.google.com/')) {
+    db.pengaturan.gasWebAppUrl = queryGasUrl;
+  }
+
+  const targetGasUrl = envGasUrl || queryGasUrl || db.pengaturan?.gasWebAppUrl;
 
   if (targetGasUrl && String(targetGasUrl).startsWith('https://script.google.com/')) {
     try {
       const remoteState = await pullFromGasWebApp(String(targetGasUrl));
-      if (remoteState) {
-        if (getEnvGasUrl()) remoteState.pengaturan.gasWebAppUrl = getEnvGasUrl();
-        if (getEnvSpreadsheetId()) remoteState.pengaturan.spreadsheetId = getEnvSpreadsheetId();
+      if (remoteState && remoteState.santri) {
+        remoteState.pengaturan = {
+          ...db.pengaturan,
+          ...(remoteState.pengaturan || {}),
+          gasWebAppUrl: envGasUrl || String(targetGasUrl),
+          ...(envSheetId ? { spreadsheetId: envSheetId } : {}),
+        };
         writeDb(remoteState);
         db = remoteState;
       }
@@ -324,7 +338,8 @@ app.get('/api/state', async (_req, res) => {
   res.json({
     success: true,
     data: db,
-    envGasConfigured: Boolean(getEnvGasUrl()),
+    envGasConfigured: Boolean(envGasUrl),
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -347,13 +362,17 @@ app.put('/api/state', async (req, res) => {
     }
   }
 
+  const now = new Date().toISOString();
   const envGasUrl = getEnvGasUrl();
   const envSheetId = getEnvSpreadsheetId();
-  if (envGasUrl && state.pengaturan) {
-    state.pengaturan.gasWebAppUrl = envGasUrl;
-  }
-  if (envSheetId && state.pengaturan) {
-    state.pengaturan.spreadsheetId = envSheetId;
+  if (state.pengaturan) {
+    state.pengaturan.lastSyncAt = now;
+    if (envGasUrl) {
+      state.pengaturan.gasWebAppUrl = envGasUrl;
+    }
+    if (envSheetId) {
+      state.pengaturan.spreadsheetId = envSheetId;
+    }
   }
 
   const targetGasUrl = envGasUrl || state.pengaturan?.gasWebAppUrl;
@@ -362,9 +381,6 @@ app.put('/api/state', async (req, res) => {
   if (targetGasUrl && String(targetGasUrl).startsWith('https://script.google.com/')) {
     try {
       await pushToGasWebApp(String(targetGasUrl), state, 'syncSnapshot');
-      if (state.pengaturan) {
-        state.pengaturan.lastSyncAt = new Date().toISOString();
-      }
       gasSynced = true;
     } catch {
       // Tetap simpan lokal meskipun koneksi ke GAS lambat
@@ -375,7 +391,8 @@ app.put('/api/state', async (req, res) => {
   res.json({
     success: true,
     gasSynced,
-    timestamp: new Date().toISOString(),
+    lastSyncAt: now,
+    timestamp: now,
   });
 });
 
@@ -392,6 +409,58 @@ app.post('/api/state/reset-demo', (req, res) => {
   res.json({ success: true, data: initialClone });
 });
 
+app.post('/api/gas/pull', async (req, res) => {
+  const { gasUrl } = req.body || {};
+  const db = readDb();
+  const targetUrl = getEnvGasUrl() || gasUrl || db.pengaturan?.gasWebAppUrl;
+
+  if (!targetUrl || !String(targetUrl).startsWith('https://script.google.com/')) {
+    res.status(400).json({
+      success: false,
+      error: 'URL Google Apps Script Web App belum diatur.',
+    });
+    return;
+  }
+
+  try {
+    const remoteState = await pullFromGasWebApp(String(targetUrl));
+    if (remoteState && remoteState.santri) {
+      remoteState.pengaturan = {
+        ...db.pengaturan,
+        ...(remoteState.pengaturan || {}),
+        gasWebAppUrl: String(targetUrl),
+        lastSyncAt: remoteState.pengaturan?.lastSyncAt || new Date().toISOString(),
+      };
+      writeDb(remoteState);
+      res.json({
+        success: true,
+        data: remoteState,
+        lastSyncAt: remoteState.pengaturan.lastSyncAt,
+      });
+      return;
+    }
+    const initRes = await pushToGasWebApp(String(targetUrl), db, 'syncSnapshot');
+    if (db.pengaturan) {
+      db.pengaturan.gasWebAppUrl = String(targetUrl);
+      db.pengaturan.lastSyncAt = new Date().toISOString();
+    }
+    writeDb(db);
+    res.json({
+      success: true,
+      data: db,
+      initializedEmptySheet: true,
+      gasResponse: initRes,
+      lastSyncAt: db.pengaturan?.lastSyncAt,
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    res.status(502).json({
+      success: false,
+      error: `Gagal menarik data dari Google Sheets: ${msg}`,
+    });
+  }
+});
+
 app.post('/api/gas/sync', async (req, res) => {
   const { gasUrl, action = 'syncSnapshot', state: clientState } = req.body || {};
   const db = clientState || readDb();
@@ -406,11 +475,12 @@ app.post('/api/gas/sync', async (req, res) => {
   }
 
   try {
-    const result = await pushToGasWebApp(String(targetUrl), db, action);
+    const now = new Date().toISOString();
     if (db.pengaturan) {
       db.pengaturan.gasWebAppUrl = String(targetUrl);
-      db.pengaturan.lastSyncAt = new Date().toISOString();
+      db.pengaturan.lastSyncAt = now;
     }
+    const result = await pushToGasWebApp(String(targetUrl), db, action);
     writeDb(db);
     res.json({
       success: true,

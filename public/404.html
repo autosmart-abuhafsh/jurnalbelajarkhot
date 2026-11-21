@@ -21,17 +21,16 @@
         }
 
         var basePath = baseSegments.length > 0 ? '/' + baseSegments.join('/') + '/' : '/';
-        var targetRoute = '/' + routeSegments.join('/');
+        var targetRoute = '/' + (routeSegments.length > 0 ? routeSegments.join('/') : 'admin/dashboard');
         var newUrl =
           l.protocol +
           '//' +
           l.hostname +
           (l.port ? ':' + l.port : '') +
           basePath +
-          '?p=' +
-          encodeURIComponent(targetRoute) +
-          (l.search ? '&' + l.search.slice(1) : '') +
-          l.hash;
+          (l.search ? l.search : '') +
+          '#' +
+          targetRoute;
         l.replace(newUrl);
       })();
     </script>

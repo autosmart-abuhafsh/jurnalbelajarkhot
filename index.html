@@ -2,20 +2,57 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
     <title>Jurnal Akademik Belajar Khot</title>
     <meta name="description" content="Sistem Digital Jurnal Pembelajaran, Penilaian Kemampuan Menulis Khot, Kehadiran Santri, Rekap Nilai, dan Rapor Akademik Belajar Khot." />
     <meta property="og:title" content="Jurnal Akademik Belajar Khot" />
     <meta property="og:description" content="Sistem Digital Jurnal Pembelajaran, Penilaian Kemampuan Menulis Khot, Kehadiran Santri, Rekap Nilai, dan Rapor Akademik Belajar Khot." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+    <script>
+      // Proteksi Anti-Blank GitHub Pages (github.io):
+      // Jika dibuka di https://username.github.io/nama-repo tanpa garis miring di akhir (/),
+      // tambahkan trailing slash sebelum browser memuat ./src/main.tsx atau ./assets/...
+      (function () {
+        try {
+          var l = window.location;
+          var isGithubIo = l.hostname.indexOf('github.io') !== -1;
+          var parts = l.pathname.split('/').filter(Boolean);
+          var internalRoots = ['login', 'admin', 'guru', 'print'];
+          if (
+            isGithubIo &&
+            parts.length === 1 &&
+            internalRoots.indexOf(parts[0]) === -1 &&
+            !l.pathname.endsWith('/') &&
+            !l.pathname.endsWith('.html')
+          ) {
+            l.replace(l.protocol + '//' + l.host + l.pathname + '/' + l.search + l.hash);
+            return;
+          }
+          // Jika terdapat parameter redirect ?p=/... dari 404.html, normalkan ke hash #/...
+          if (l.search && l.search.indexOf('p=') !== -1) {
+            var params = new URLSearchParams(l.search);
+            var p = params.get('p');
+            if (p && p.startsWith('/')) {
+              params.delete('p');
+              var qs = params.toString();
+              var base = isGithubIo && parts.length >= 1 && internalRoots.indexOf(parts[0]) === -1
+                ? '/' + parts[0] + '/'
+                : '/';
+              window.history.replaceState(null, '', base + (qs ? '?' + qs : '') + '#' + p);
+            }
+          }
+        } catch (e) {
+          // ignore
+        }
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   </head>
-  <body class="bg-[#FAFCF9] text-[#26332A] dark:bg-[#0D1510] dark:text-[#ECF3EE] antialiased selection:bg-[#A3D1B3]/40">
+  <body class="bg-[#FAFCF9] text-[#26332A] dark:bg-[#0D1510] dark:text-[#ECF3EE] antialiased selection:bg-[#A3D1B3]/40 overflow-x-hidden">
     <div id="root"></div>
     <script type="module" src="./src/main.tsx"></script>
   </body>
 </html>
-

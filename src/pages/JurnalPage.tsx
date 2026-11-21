@@ -1022,9 +1022,67 @@ export const JurnalPage: React.FC<JurnalPageProps> = ({
         </div>
       </div>
 
-      {/* Daftar Jurnal Table */}
+      {/* Daftar Jurnal List (Mobile Cards + Desktop Table) */}
       <div className="rounded-2xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile Card View for HP */}
+        <div className="md:hidden divide-y divide-[#E3EAE3] dark:divide-[#24382C]">
+          {filteredJurnal.length > 0 ? (
+            filteredJurnal.map((j) => (
+              <div key={j.jurnalId} className="p-4 space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-mono text-[#6B776D] dark:text-[#A3D1B3]">
+                    {j.nomorJurnal} · {j.hari}, {formatDateShortId(j.tanggal)}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#F3F7F2] dark:bg-[#1B2B22] text-[#19432D] dark:text-[#A3D1B3]">
+                    Ke-{j.pertemuanKe} · {j.statusJurnal}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-[#26332A] dark:text-[#ECF3EE]">
+                    {j.materiPembelajaran}
+                  </p>
+                  <p className="text-xs text-[#6B776D] dark:text-[#A3D1B3]/80 mt-0.5">
+                    {j.namaKelas} ({j.programKhot}) · {j.namaGuru}
+                  </p>
+                </div>
+                <div className="flex items-center justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedJurnalId(j.jurnalId);
+                      navigate(`${rolePrefix}/jurnal/${j.jurnalId}`);
+                    }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#19432D] text-white flex items-center gap-1"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Buka Detail / Absensi / Nilai</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openEditForm(j)}
+                    className="p-1.5 rounded-lg bg-[#F3F7F2] dark:bg-[#1B2B22] text-[#26332A] dark:text-[#ECF3EE]"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/print/jurnal/${j.jurnalId}`)}
+                    className="p-1.5 rounded-lg bg-[#F3F7F2] dark:bg-[#1B2B22] text-[#26332A] dark:text-[#ECF3EE]"
+                  >
+                    <Printer className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="p-8 text-center text-sm text-[#6B776D]">
+              Belum ada jurnal pertemuan yang cocok dengan pencarian.
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-[#E3EAE3] dark:border-[#24382C] bg-[#F3F7F2]/60 dark:bg-[#1B2B22]/60 text-xs font-semibold text-[#6B776D] dark:text-[#A3D1B3]">

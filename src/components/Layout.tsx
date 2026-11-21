@@ -26,6 +26,7 @@ import {
   Info,
   Plus,
   Palette,
+  RefreshCw,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { LogoBelajarKhot } from './LogoBelajarKhot';
@@ -151,6 +152,7 @@ const NAV_ITEMS: NavItem[] = [
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const {
     db,
+    dbStatus,
     currentUser,
     currentPath,
     navigate,
@@ -162,6 +164,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     confirmDialog,
     closeConfirm,
     askConfirm,
+    pullFromGoogleSheets,
   } = useApp();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -449,9 +452,9 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Bar Contract: Responsive on HP & PC */}
-        <header className="no-print h-16 px-3.5 sm:px-6 lg:px-8 border-b border-[#E3EAE3] dark:border-[#24382C] bg-[#FFFFFF]/95 dark:bg-[#142019]/95 backdrop-blur-xs flex items-center justify-between gap-3 sm:gap-6 sticky top-0 z-30">
+        <header className="no-print h-16 px-3.5 sm:px-6 lg:px-8 border-b border-[#E3EAE3] dark:border-[#24382C] bg-[#FFFFFF]/95 dark:bg-[#142019]/95 backdrop-blur-xs flex items-center justify-between gap-2.5 sm:gap-6 sticky top-0 z-30">
           {/* Zone 1: Mobile Menu Trigger + Contextual Title */}
-          <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
@@ -503,17 +506,33 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             </button>
           </nav>
 
-          {/* Zone 3: Quick Actions (Edit Logo/Tema + Tambah Jurnal) */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Zone 3: Quick Actions (Sinkron HP & PC + Edit Logo/Tema + Tambah Jurnal) */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => pullFromGoogleSheets()}
+              aria-label="Sinkronisasi Data HP dan PC"
+              title="Sinkronkan Data Terbaru antara HP, PC & Google Sheets"
+              className="px-2.5 sm:px-3 py-2 text-xs font-semibold rounded-xl border border-[#E3EAE3] dark:border-[#24382C] bg-[#F3F7F2] dark:bg-[#1B2B22] text-[#19432D] dark:text-[#A3D1B3] hover:bg-[#E3EAE3] dark:hover:bg-[#24382C] transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0"
+            >
+              <RefreshCw
+                className={`w-3.5 h-3.5 shrink-0 ${dbStatus === 'syncing' ? 'animate-spin' : ''}`}
+              />
+              <span className="hidden sm:inline">
+                {dbStatus === 'syncing' ? 'Sinkron...' : 'Sinkron HP/PC'}
+              </span>
+            </button>
+
             {isAdmin && (
               <button
                 type="button"
                 onClick={() => setLogoModalOpen(true)}
-                className="px-3 py-2 text-xs font-semibold rounded-xl border border-[#E3EAE3] dark:border-[#24382C] bg-[#F3F7F2] dark:bg-[#1B2B22] text-[#26332A] dark:text-[#ECF3EE] hover:bg-[#E3EAE3] dark:hover:bg-[#24382C] transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0"
+                className="px-2.5 sm:px-3 py-2 text-xs font-semibold rounded-xl border border-[#E3EAE3] dark:border-[#24382C] bg-[#F3F7F2] dark:bg-[#1B2B22] text-[#26332A] dark:text-[#ECF3EE] hover:bg-[#E3EAE3] dark:hover:bg-[#24382C] transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0"
                 title="Ubah / Upload Logo & Warna Tema Portal"
+                aria-label="Logo dan Tema"
               >
                 <Palette className="w-3.5 h-3.5 shrink-0" style={{ color: accentColor }} />
-                <span className="hidden sm:inline">Logo &amp; Tema</span>
+                <span className="hidden xl:inline">Logo &amp; Tema</span>
               </button>
             )}
             <button
@@ -522,7 +541,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               style={{
                 background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
               }}
-              className="px-3.5 sm:px-4 py-2 text-xs font-semibold text-white rounded-xl transition-opacity hover:opacity-95 flex items-center gap-1.5 whitespace-nowrap shrink-0 shadow-xs"
+              className="px-3 sm:px-4 py-2 text-xs font-semibold text-white rounded-xl transition-opacity hover:opacity-95 flex items-center gap-1.5 whitespace-nowrap shrink-0 shadow-xs"
             >
               <Plus className="w-3.5 h-3.5 shrink-0" />
               <span>Tambah Jurnal</span>

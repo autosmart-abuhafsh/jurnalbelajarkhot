@@ -1,16 +1,16 @@
 /**
  * SETUP.GS — INISIALISASI DATABASE JURNAL AKADEMIK BELAJAR KHOT
- * Sistem Pendamping Aplikasi Membership Management Belajar Khot
+ * File 1 dari 2 (Pasang bersama Code.gs di Extensions > Apps Script pada Google Sheets)
  *
  * Ketentuan Keamanan Database:
- * 1. Membuat sheet secara otomatis apabila belum tersedia.
+ * 1. Membuat 12 sheet tabel database secara otomatis di Google Sheets apabila belum tersedia.
  * 2. Mempertahankan seluruh data lama pada spreadsheet.
  * 3. TIDAK PERNAH menjalankan clear() atau menghapus baris data yang sudah ada.
- * 4. Jika sheet sudah memiliki data (seperti Users, Members, Classes), hanya menambahkan
+ * 4. Jika sheet sudah memiliki data (Users, Members, Classes, dll), hanya menambahkan
  *    kolom yang diperlukan secara aman di sebelah kanan tanpa merusak struktur lama.
  */
 
-const REQUIRED_SHEETS_SCHEMA = {
+var REQUIRED_SHEETS_SCHEMA = {
   Users: [
     'userId', 'username', 'passwordHash', 'namaLengkap', 'role',
     'guruId', 'foto', 'whatsapp', 'kelasDiampu', 'statusAkun', 'updatedAt'
@@ -66,13 +66,37 @@ const REQUIRED_SHEETS_SCHEMA = {
   ]
 };
 
+/**
+ * Menampilkan menu khusus "Jurnal Belajar Khot" di toolbar Google Sheets
+ */
+function onOpen() {
+  try {
+    SpreadsheetApp.getUi()
+      .createMenu('📚 Jurnal Belajar Khot')
+      .addItem('1. Inisialisasi Sheet Database (Setup)', 'setupJurnalAkademikDatabase')
+      .addToUi();
+  } catch (e) {
+    // Abaikan jika dijalankan dari trigger Web App tanpa UI
+  }
+}
+
+/**
+ * Alias fungsi setup() agar mudah dijalankan dari tombol Run di editor Apps Script
+ */
+function setup() {
+  return setupJurnalAkademikDatabase();
+}
+
+/**
+ * Fungsi utama pembuatan & validasi 12 sheet database di Google Sheets
+ */
 function setupJurnalAkademikDatabase() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const report = [];
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var report = [];
 
   Object.keys(REQUIRED_SHEETS_SCHEMA).forEach(function(sheetName) {
-    const requiredColumns = REQUIRED_SHEETS_SCHEMA[sheetName];
-    let sheet = ss.getSheetByName(sheetName);
+    var requiredColumns = REQUIRED_SHEETS_SCHEMA[sheetName];
+    var sheet = ss.getSheetByName(sheetName);
 
     if (!sheet) {
       sheet = ss.insertSheet(sheetName);
@@ -84,18 +108,26 @@ function setupJurnalAkademikDatabase() {
       sheet.setFrozenRows(1);
       report.push('Sheet dibuat: ' + sheetName);
     } else {
-      const lastCol = sheet.getLastColumn();
+      var lastCol = sheet.getLastColumn();
       if (lastCol === 0) {
         sheet.getRange(1, 1, 1, requiredColumns.length).setValues([requiredColumns]);
+        sheet.getRange(1, 1, 1, requiredColumns.length)
+          .setFontWeight('bold')
+          .setBackground('#19432D')
+          .setFontColor('#FFFFFF');
         sheet.setFrozenRows(1);
         report.push('Header diinisialisasi: ' + sheetName);
       } else {
-        const existingHeaders = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
-        const missingCols = requiredColumns.filter(function(col) {
+        var existingHeaders = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+        var missingCols = requiredColumns.filter(function(col) {
           return existingHeaders.indexOf(col) === -1;
         });
         if (missingCols.length > 0) {
           sheet.getRange(1, lastCol + 1, 1, missingCols.length).setValues([missingCols]);
+          sheet.getRange(1, lastCol + 1, 1, missingCols.length)
+            .setFontWeight('bold')
+            .setBackground('#19432D')
+            .setFontColor('#FFFFFF');
           report.push('Kolom ditambahkan secara aman pada ' + sheetName + ': ' + missingCols.join(', '));
         } else {
           report.push('Sheet sudah lengkap & aman: ' + sheetName);
@@ -107,6 +139,7 @@ function setupJurnalAkademikDatabase() {
   return {
     success: true,
     spreadsheetName: ss.getName(),
+    spreadsheetId: ss.getId(),
     details: report,
     timestamp: new Date().toISOString()
   };

@@ -19,6 +19,8 @@ import {
   normalizeInternalRoute,
   buildBrowserHistoryUrl,
   resolveGasEnvironmentConfig,
+  detectBasePathPrefix,
+  extractGasUrlFromSearch,
 } from '../utils/deploymentConfig';
 
 export interface ToastMessage {
@@ -99,6 +101,7 @@ interface AppContextType {
 
   savePengaturan: (pengaturan: PengaturanAkademik) => Promise<boolean>;
   syncWithGoogleSheets: (customUrl?: string) => Promise<{ success: boolean; message: string }>;
+  pullFromGoogleSheets: (customUrl?: string, silent?: boolean) => Promise<{ success: boolean; message: string }>;
   resetDemoDatabase: () => Promise<boolean>;
 }
 
@@ -170,8 +173,10 @@ async function directPushToGas(gasUrl: string, state: DatabaseState, action = 's
 }
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const urlPairedGas = typeof window !== 'undefined' ? extractGasUrlFromSearch(window.location.search) : '';
+
   const initialEnvConfig = resolveGasEnvironmentConfig(
-    INITIAL_DATABASE_STATE.pengaturan.gasWebAppUrl,
+    urlPairedGas || INITIAL_DATABASE_STATE.pengaturan.gasWebAppUrl,
     INITIAL_DATABASE_STATE.pengaturan.spreadsheetId
   );
 
@@ -181,7 +186,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (cached) {
         const parsed = JSON.parse(cached) as DatabaseState;
         const resolved = resolveGasEnvironmentConfig(
-          parsed.pengaturan?.gasWebAppUrl,
+          urlPairedGas || parsed.pengaturan?.gasWebAppUrl,
           parsed.pengaturan?.spreadsheetId
         );
         if (resolved.gasWebAppUrl && parsed.pengaturan) {
@@ -307,10 +312,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const normalized = normalizeInternalRoute(path, '', '');
     setCurrentPath(normalized);
     try {
+      const isSubpathOrGithubIo =
+        window.location.hostname.includes('github.io') ||
+        Boolean(detectBasePathPrefix(window.location.pathname));
       const browserUrl = buildBrowserHistoryUrl(
         normalized,
         window.location.pathname,
-        window.location.search
+        window.location.search,
+        isSubpathOrGithubIo
       );
       window.history.pushState({}, '', browserUrl);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -337,21 +346,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, []);
 
-  // Load initial state from backend API (Vercel / Express) + Direct Google Apps Script Auto-Sync
+  // Load initial state from backend API (Vercel / Express) + Direct Google Apps Script Auto-Sync (HP & PC)
   useEffect(() => {
     let mounted = true;
     async function fetchInitial() {
       setIsLoading(true);
       try {
+        const localGas = urlPairedGas || db.pengaturan?.gasWebAppUrl || '';
         let serverHandled = false;
         try {
-          const res = await fetch('/api/state');
+          const queryParam = localGas ? `?gasUrl=${encodeURIComponent(localGas)}` : '';
+          const res = await fetch(`/api/state${queryParam}`);
           const contentType = res.headers.get('content-type') || '';
           if (res.ok && contentType.includes('application/json')) {
             const json = await res.json();
             if (mounted && json.success && json.data) {
               const resolved = resolveGasEnvironmentConfig(
-                json.data.pengaturan?.gasWebAppUrl,
+                localGas || json.data.pengaturan?.gasWebAppUrl,
                 json.data.pengaturan?.spreadsheetId
               );
               if (resolved.gasWebAppUrl && json.data.pengaturan) {
@@ -373,19 +384,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           // Static hosting (github.io) does not have /api/state
         }
 
-        // Jika di-deploy di GitHub Pages (static) atau memiliki URL GAS di client env, tarik langsung dari GAS
-        if (!serverHandled && mounted) {
+        // Jika di-deploy di GitHub Pages (static) atau memiliki URL GAS di client, tarik langsung dari GAS
+        if (mounted) {
           const resolved = resolveGasEnvironmentConfig(
-            db.pengaturan?.gasWebAppUrl,
+            localGas || db.pengaturan?.gasWebAppUrl,
             db.pengaturan?.spreadsheetId
           );
-          if (resolved.gasWebAppUrl) {
+          if (resolved.gasWebAppUrl && (!serverHandled || urlPairedGas)) {
             const gasState = await directPullFromGas(resolved.gasWebAppUrl);
-            if (mounted && gasState) {
-              gasState.pengaturan.gasWebAppUrl = resolved.gasWebAppUrl;
-              if (resolved.spreadsheetId) {
-                gasState.pengaturan.spreadsheetId = resolved.spreadsheetId;
-              }
+            if (mounted && gasState && gasState.santri) {
+              gasState.pengaturan = {
+                ...db.pengaturan,
+                ...(gasState.pengaturan || {}),
+                gasWebAppUrl: resolved.gasWebAppUrl,
+                ...(resolved.spreadsheetId ? { spreadsheetId: resolved.spreadsheetId } : {}),
+              };
               setDb(gasState);
               localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(gasState));
             }
@@ -400,22 +413,96 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => {
       mounted = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Auto-Sync Lintas Perangkat (HP <-> PC): Ketika tab kembali aktif atau setiap 20 detik
+  useEffect(() => {
+    let isChecking = false;
+    const checkRemoteUpdates = async () => {
+      if (isChecking || isSaving || document.hidden) return;
+      isChecking = true;
+      try {
+        const gasUrl = effectiveGasUrl;
+        const queryParam = gasUrl ? `?gasUrl=${encodeURIComponent(gasUrl)}` : '';
+        let updatedFromServer = false;
+
+        try {
+          const res = await fetch(`/api/state${queryParam}`);
+          const contentType = res.headers.get('content-type') || '';
+          if (res.ok && contentType.includes('application/json')) {
+            const json = await res.json();
+            if (json.success && json.data && json.data.santri) {
+              const remoteSync = json.data.pengaturan?.lastSyncAt || '';
+              const localSync = db.pengaturan?.lastSyncAt || '';
+              if (remoteSync && remoteSync !== localSync && remoteSync > localSync) {
+                if (gasUrl && json.data.pengaturan) {
+                  json.data.pengaturan.gasWebAppUrl = gasUrl;
+                }
+                setDb(json.data);
+                localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(json.data));
+              }
+              updatedFromServer = true;
+            }
+          }
+        } catch {
+          // Static host fallback (github.io)
+        }
+
+        if (!updatedFromServer && gasUrl) {
+          const remoteState = await directPullFromGas(gasUrl);
+          if (remoteState && remoteState.santri) {
+            const remoteSync = remoteState.pengaturan?.lastSyncAt || '';
+            const localSync = db.pengaturan?.lastSyncAt || '';
+            if (remoteSync && remoteSync !== localSync && remoteSync > localSync) {
+              remoteState.pengaturan = {
+                ...db.pengaturan,
+                ...(remoteState.pengaturan || {}),
+                gasWebAppUrl: gasUrl,
+              };
+              setDb(remoteState);
+              localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(remoteState));
+            }
+          }
+        }
+      } finally {
+        isChecking = false;
+      }
+    };
+
+    const intervalId = window.setInterval(checkRemoteUpdates, 20000);
+    const onFocusOrVisible = () => {
+      if (!document.hidden) {
+        checkRemoteUpdates();
+      }
+    };
+    window.addEventListener('focus', onFocusOrVisible);
+    document.addEventListener('visibilitychange', onFocusOrVisible);
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', onFocusOrVisible);
+      document.removeEventListener('visibilitychange', onFocusOrVisible);
+    };
+  }, [db.pengaturan, effectiveGasUrl, isSaving]);
 
   const persistStateToServer = useCallback(
     async (nextState: DatabaseState, section?: string): Promise<boolean> => {
       setIsSaving(true);
       setDbStatus('syncing');
 
+      const now = new Date().toISOString();
       const resolved = resolveGasEnvironmentConfig(
         nextState.pengaturan?.gasWebAppUrl,
         nextState.pengaturan?.spreadsheetId
       );
-      if (resolved.gasWebAppUrl && nextState.pengaturan) {
-        nextState.pengaturan.gasWebAppUrl = resolved.gasWebAppUrl;
+      if (nextState.pengaturan) {
+        nextState.pengaturan.lastSyncAt = now;
+        if (resolved.gasWebAppUrl) {
+          nextState.pengaturan.gasWebAppUrl = resolved.gasWebAppUrl;
+        }
       }
 
-      // Simpan langsung di state & localStorage agar UI responsif
+      // Simpan langsung di state & localStorage agar UI responsif di HP maupun PC
       setDb(nextState);
       localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(nextState));
 
@@ -1286,6 +1373,118 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [authToken, db, effectiveGasUrl, showToast]
   );
 
+  // Tarik Data Terbaru dari Google Sheets (2-Way Sync HP & PC)
+  const pullFromGoogleSheets = useCallback(
+    async (customUrl?: string, silent = false): Promise<{ success: boolean; message: string }> => {
+      const targetUrl = (customUrl || effectiveGasUrl || db.pengaturan.gasWebAppUrl || '').trim();
+
+      if (!silent) setDbStatus('syncing');
+
+      // 1. Jika ada URL GAS, coba tarik melalui endpoint /api/gas/pull atau langsung dari browser
+      if (targetUrl && targetUrl.startsWith('https://script.google.com/')) {
+        try {
+          const res = await fetch('/api/gas/pull', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+            },
+            body: JSON.stringify({ gasUrl: targetUrl }),
+          });
+          const contentType = res.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
+            const json = await res.json();
+            if (res.ok && json.success && json.data) {
+              setDb(json.data);
+              localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(json.data));
+              setDbStatus('connected');
+              if (!silent) {
+                showToast(
+                  'success',
+                  'Data HP & PC Tersinkron',
+                  json.initializedEmptySheet
+                    ? '12 Sheet Google Sheets telah dibuat & diisi otomatis.'
+                    : 'Data terbaru dari Google Sheets berhasil dimuat.'
+                );
+              }
+              return { success: true, message: 'Data berhasil ditarik dari Google Sheets.' };
+            }
+          }
+        } catch {
+          // Fallback ke directPullFromGas untuk GitHub Pages (github.io)
+        }
+
+        const remoteState = await directPullFromGas(targetUrl);
+        if (remoteState && remoteState.santri) {
+          remoteState.pengaturan = {
+            ...db.pengaturan,
+            ...(remoteState.pengaturan || {}),
+            gasWebAppUrl: targetUrl,
+            lastSyncAt: remoteState.pengaturan?.lastSyncAt || new Date().toISOString(),
+          };
+          setDb(remoteState);
+          localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(remoteState));
+          setDbStatus('connected');
+          if (!silent) {
+            showToast('success', 'Data HP & PC Tersinkron', 'Data terbaru dari Google Sheets berhasil dimuat.');
+          }
+          return { success: true, message: 'Data berhasil ditarik langsung dari Google Sheets.' };
+        }
+
+        // Jika sheet baru pertama kali dihubungkan di github.io, dorong snapshot awal
+        const pushed = await directPushToGas(targetUrl, db, 'syncSnapshot');
+        if (pushed) {
+          const nextDb = {
+            ...db,
+            pengaturan: {
+              ...db.pengaturan,
+              gasWebAppUrl: targetUrl,
+              lastSyncAt: new Date().toISOString(),
+            },
+          };
+          setDb(nextDb);
+          localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(nextDb));
+          setDbStatus('connected');
+          if (!silent) {
+            showToast('success', '12 Sheet Google Sheets Diinisialisasi', 'Database awal berhasil dikirim ke Google Sheets.');
+          }
+          return { success: true, message: 'Database diinisialisasi ke Google Sheets.' };
+        }
+      }
+
+      // 2. Jika belum mengisi URL GAS namun berjalan di server/Vercel, tarik dari /api/state
+      try {
+        const res = await fetch('/api/state');
+        const contentType = res.headers.get('content-type') || '';
+        if (res.ok && contentType.includes('application/json')) {
+          const json = await res.json();
+          if (json.success && json.data) {
+            setDb(json.data);
+            localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(json.data));
+            setDbStatus('connected');
+            if (!silent) {
+              showToast('success', 'Data Diperbarui', 'Data terbaru dari server berhasil disinkronkan.');
+            }
+            return { success: true, message: 'Data server berhasil dimuat.' };
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      setDbStatus('connected');
+      if (!silent) {
+        showToast(
+          'warning',
+          'URL Google Apps Script Belum Diisi',
+          'Masukkan URL Web App Google Apps Script di menu Pengaturan agar HP dan PC tersinkron ke Google Sheets.'
+        );
+      }
+      return { success: false, message: 'URL GAS belum diatur.' };
+    },
+    [authToken, db, effectiveGasUrl, showToast]
+  );
+
   const resetDemoDatabase = useCallback(async (): Promise<boolean> => {
     try {
       const res = await fetch('/api/state/reset-demo', {
@@ -1361,6 +1560,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteRapor,
         savePengaturan,
         syncWithGoogleSheets,
+        pullFromGoogleSheets,
         resetDemoDatabase,
       }}
     >

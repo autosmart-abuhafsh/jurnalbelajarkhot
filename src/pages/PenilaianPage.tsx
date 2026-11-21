@@ -266,8 +266,111 @@ export const PenilaianPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Matrix Table */}
-          <div className="overflow-x-auto">
+          {/* Mobile Card View for HP (Touch-Friendly Rubric Inputs) */}
+          <div className="lg:hidden space-y-3">
+            {classSantri.map((s, idx) => {
+              const att = db.absensi.find(
+                (a) => a.jurnalId === currentJurnal.jurnalId && a.santriId === s.santriId
+              );
+              const rowScores = activeRubriks.map((r) => {
+                const raw = draftScores[s.santriId]?.[r.aspekId] ?? '';
+                return {
+                  nilai: raw.trim() === '' ? null : Number(raw),
+                  bobot: r.bobot,
+                };
+              });
+              const finalScore = calculateSessionFinalScore(rowScores);
+              const predikat = getGradePredicate(finalScore, db.pengaturan.batasPredikat);
+
+              return (
+                <div
+                  key={s.santriId}
+                  className="p-4 rounded-xl bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C] space-y-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <span className="text-[11px] font-mono text-[#6B776D] dark:text-[#A3D1B3]">
+                        #{idx + 1} · {s.memberId} · {att?.statusKehadiran || 'Belum Dicatat'}
+                      </span>
+                      <p className="text-sm font-bold text-[#26332A] dark:text-[#ECF3EE]">
+                        {s.namaLengkap}
+                      </p>
+                    </div>
+                    <div className="text-right flex items-center gap-2">
+                      {finalScore !== null ? (
+                        <div className="px-2.5 py-1 rounded-lg bg-[#19432D] text-white text-right">
+                          <span className="font-mono text-xs font-bold tabular-nums block">
+                            {finalScore.toString().replace('.', ',')}
+                          </span>
+                          <span className="text-[10px] block opacity-90">Predikat {predikat}</span>
+                        </div>
+                      ) : (
+                        <span className="text-[11px] italic text-[#6B776D]">Belum Dinilai</span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setHistorySantriId(s.santriId)}
+                        title="Lihat Riwayat Perubahan Nilai"
+                        className="p-2 rounded-lg bg-white dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] text-[#6B776D]"
+                      >
+                        <History className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {activeRubriks.map((r) => (
+                      <div
+                        key={r.aspekId}
+                        className="p-2 rounded-lg bg-white dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C]"
+                      >
+                        <label className="block text-[11px] font-semibold text-[#26332A] dark:text-[#ECF3EE] truncate">
+                          {r.namaAspek}
+                        </label>
+                        <span className="block text-[10px] font-mono text-[#6B776D] dark:text-[#A3D1B3] mb-1">
+                          Bobot {r.bobot}%
+                        </span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          value={draftScores[s.santriId]?.[r.aspekId] ?? ''}
+                          onChange={(e) =>
+                            setDraftScores((prev) => ({
+                              ...prev,
+                              [s.santriId]: {
+                                ...(prev[s.santriId] || {}),
+                                [r.aspekId]: e.target.value,
+                              },
+                            }))
+                          }
+                          placeholder="0-100"
+                          className="w-full px-2.5 py-1.5 text-xs font-mono tabular-nums rounded-md bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <input
+                    type="text"
+                    list="quick-notes-list"
+                    value={draftNotes[s.santriId] || ''}
+                    onChange={(e) =>
+                      setDraftNotes((prev) => ({
+                        ...prev,
+                        [s.santriId]: e.target.value,
+                      }))
+                    }
+                    placeholder="Catatan perkembangan santri..."
+                    className="w-full px-3 py-2 text-xs rounded-lg bg-white dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C]"
+                  />
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop Matrix Table */}
+          <div className="hidden lg:block overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="border-b border-[#E3EAE3] dark:border-[#24382C] font-semibold text-[#6B776D] dark:text-[#A3D1B3]">

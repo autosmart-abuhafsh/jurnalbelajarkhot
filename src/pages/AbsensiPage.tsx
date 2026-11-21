@@ -292,7 +292,81 @@ export const AbsensiPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
+              {/* Mobile Card View for HP (Touch-Friendly Status Buttons) */}
+              <div className="md:hidden space-y-3">
+                {filteredClassSantri.map((s, idx) => {
+                  const status = draftMap[s.santriId]?.status || 'Hadir';
+                  return (
+                    <div
+                      key={s.santriId}
+                      className="p-4 rounded-xl bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C] space-y-3"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <span className="text-xs font-mono text-[#6B776D] dark:text-[#A3D1B3]">
+                            #{idx + 1} · {s.memberId}
+                          </span>
+                          <p className="text-sm font-bold text-[#26332A] dark:text-[#ECF3EE]">
+                            {s.namaLengkap}
+                          </p>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-[#19432D]/10 text-[#19432D] dark:bg-[#A3D1B3]/15 dark:text-[#A3D1B3]">
+                          {status}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {(['Hadir', 'Izin', 'Sakit', 'Alpa'] as StatusKehadiran[]).map((st) => {
+                          const active = status === st;
+                          return (
+                            <button
+                              key={st}
+                              type="button"
+                              onClick={() =>
+                                setDraftMap((prev) => ({
+                                  ...prev,
+                                  [s.santriId]: {
+                                    status: st,
+                                    keterangan: prev[s.santriId]?.keterangan || '',
+                                  },
+                                }))
+                              }
+                              className={`py-2 px-2 rounded-lg text-xs font-semibold border transition-colors ${
+                                active
+                                  ? st === 'Alpa'
+                                    ? 'bg-[#B44238] text-white border-[#B44238]'
+                                    : 'bg-[#19432D] text-white border-[#19432D]'
+                                  : 'bg-white dark:bg-[#142019] text-[#26332A] dark:text-[#ECF3EE] border-[#E3EAE3] dark:border-[#24382C]'
+                              }`}
+                            >
+                              {st}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <input
+                        type="text"
+                        value={draftMap[s.santriId]?.keterangan || ''}
+                        onChange={(e) =>
+                          setDraftMap((prev) => ({
+                            ...prev,
+                            [s.santriId]: {
+                              status: prev[s.santriId]?.status || 'Hadir',
+                              keterangan: e.target.value,
+                            },
+                          }))
+                        }
+                        placeholder="Catatan kehadiran..."
+                        className="w-full px-3 py-2 text-xs rounded-lg bg-white dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C]"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-[#E3EAE3] dark:border-[#24382C] text-xs font-semibold text-[#6B776D] dark:text-[#A3D1B3]">

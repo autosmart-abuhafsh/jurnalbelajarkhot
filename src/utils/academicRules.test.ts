@@ -15,6 +15,7 @@ import {
   normalizeInternalRoute,
   buildBrowserHistoryUrl,
   resolveGasEnvironmentConfig,
+  extractGasUrlFromSearch,
 } from './deploymentConfig';
 import { Absensi, JurnalPembelajaran } from '../types';
 
@@ -167,8 +168,16 @@ test('GitHub Pages (github.io) subpath & 404 redirect routes normalize without b
     '/jurnal-belajar-khot/admin/santri'
   );
   assert.equal(
+    buildBrowserHistoryUrl('/admin/santri', '/jurnal-belajar-khot/', '', true),
+    '/jurnal-belajar-khot/#/admin/santri'
+  );
+  assert.equal(
     buildBrowserHistoryUrl('/admin/santri', '/admin/dashboard', '?autostart=1'),
     '/admin/santri?autostart=1'
+  );
+  assert.equal(
+    extractGasUrlFromSearch('?gas=https%3A%2F%2Fscript.google.com%2Fmacros%2Fs%2FABC123%2Fexec'),
+    'https://script.google.com/macros/s/ABC123/exec'
   );
 });
 
