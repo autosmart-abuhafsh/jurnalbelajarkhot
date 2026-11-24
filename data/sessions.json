@@ -33,5 +33,10 @@
     "userId": "USR-ADMIN-01",
     "role": "ADMIN",
     "createdAt": "2026-11-24T13:05:26.246Z"
+  },
+  "9630d5d876c3a518869cc5465f12c076f51a82744f8cf4b8": {
+    "userId": "USR-ADMIN-01",
+    "role": "ADMIN",
+    "createdAt": "2026-11-24T13:51:37.529Z"
   }
 }

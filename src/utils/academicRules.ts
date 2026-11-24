@@ -360,6 +360,26 @@ export function generateNextGuruId(
 }
 
 /**
+ * Generate ID Login Admin unik berikutnya (ADM-001, ADM-002, ...)
+ */
+export function generateNextAdminId(
+  users: Array<{ guruId?: string; userId: string }>
+): string {
+  const prefix = 'ADM-';
+  const taken = new Set(
+    users
+      .flatMap((u) => [u.guruId || '', u.userId || ''])
+      .map((s) => s.trim().toUpperCase())
+      .filter(Boolean)
+  );
+  let num = 1;
+  while (taken.has(`${prefix}${String(num).padStart(3, '0')}`)) {
+    num++;
+  }
+  return `${prefix}${String(num).padStart(3, '0')}`;
+}
+
+/**
  * Mencari akun pengguna berdasarkan Username ATAU ID Guru (case-insensitive).
  */
 export function findUserByLoginIdentifier<

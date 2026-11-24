@@ -203,11 +203,11 @@ export const DashboardPage: React.FC = () => {
               <span>{formatDateLongId(todayStr)}</span>
               <span>·</span>
               <span>{db.pengaturan.periodeAktif}</span>
-              {!isAdmin && currentUser?.guruId && (
+              {currentUser?.guruId && (
                 <>
                   <span>·</span>
                   <span className="font-mono font-semibold text-[#19432D] dark:text-[#A3D1B3] whitespace-nowrap">
-                    ID Guru: {currentUser.guruId}
+                    {isAdmin ? `ID Admin: ${currentUser.guruId}` : `ID Guru: ${currentUser.guruId}`}
                   </span>
                 </>
               )}

@@ -127,8 +127,8 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     key: 'guru',
-    label: 'Data Guru',
-    shortLabel: 'Guru',
+    label: 'Data Guru & Admin',
+    shortLabel: 'Akun',
     adminPath: '/admin/guru',
     icon: UserCheck,
     adminOnly: true,
@@ -349,7 +349,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 </p>
                 <p className="text-[11px] text-[#6B776D] dark:text-[#A3D1B3]/80 truncate">
                   {currentUser.role === 'ADMIN'
-                    ? 'Administrator Lembaga'
+                    ? `Admin · ${currentUser.guruId || currentUser.username}`
                     : `ID Guru: ${currentUser.guruId || currentUser.username}`}
                 </p>
               </div>
@@ -466,7 +466,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                     </p>
                     <p className="text-[11px] text-[#6B776D] dark:text-[#A3D1B3]/80">
                       {currentUser.role === 'ADMIN'
-                        ? 'Administrator Lembaga'
+                        ? `Admin · ${currentUser.guruId || currentUser.username}`
                         : `ID Guru: ${currentUser.guruId || currentUser.username}`}
                     </p>
                   </div>

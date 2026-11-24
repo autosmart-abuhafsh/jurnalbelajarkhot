@@ -1461,6 +1461,45 @@
   ],
   "activityLogs": [
     {
+      "logId": "LOG-1795528300952-2u7b",
+      "userId": "USR-ADMIN-01",
+      "namaPengguna": "Ustadz  Abu Hafsh Muhammad",
+      "role": "ADMIN",
+      "jenisData": "Data Guru",
+      "aksi": "HAPUS",
+      "entitasId": "USR-1795528271438",
+      "nilaiSebelumnya": "Ustadz Admin Uji",
+      "nilaiTerbaru": "Dihapus",
+      "keterangan": "Menghapus akun guru Ustadz Admin Uji",
+      "timestamp": "2026-11-24T13:51:40.953Z"
+    },
+    {
+      "logId": "LOG-1795528292452-8yo2",
+      "userId": "USR-ADMIN-01",
+      "namaPengguna": "Ustadz  Abu Hafsh Muhammad",
+      "role": "ADMIN",
+      "jenisData": "Data Guru",
+      "aksi": "EDIT",
+      "entitasId": "USR-1795528271438",
+      "nilaiSebelumnya": "Ustadz Admin Uji (ADM-KHOT-99)",
+      "nilaiTerbaru": "Ustadz Admin Uji (BOSS-KHOT-01)",
+      "keterangan": "Memperbarui data akun Administrator Ustadz Admin Uji",
+      "timestamp": "2026-11-24T13:51:32.452Z"
+    },
+    {
+      "logId": "LOG-1795528271438-bo04",
+      "userId": "USR-ADMIN-01",
+      "namaPengguna": "Ustadz  Abu Hafsh Muhammad",
+      "role": "ADMIN",
+      "jenisData": "Data Guru",
+      "aksi": "TAMBAH",
+      "entitasId": "USR-1795528271438",
+      "nilaiSebelumnya": "-",
+      "nilaiTerbaru": "Ustadz Admin Uji (ADM-KHOT-99)",
+      "keterangan": "Menambahkan akun Administrator Ustadz Admin Uji",
+      "timestamp": "2026-11-24T13:51:11.438Z"
+    },
+    {
       "logId": "LOG-1795525528165-t2kk",
       "userId": "USR-ADMIN-01",
       "namaPengguna": "Ustadz  Abu Hafsh Muhammad",
@@ -1767,7 +1806,7 @@
     "tampilkanDataDemo": true,
     "gasWebAppUrl": "https://script.google.com/macros/s/AKfycbwstWGT2UctpWEG9HbaF1mdHeNQ2P0NQuUP_3cCriwwCgkifVwqx--qRHXIIMyCXq4vww/exec",
     "spreadsheetId": "1BelajarKhotMasterSheet_AcademicDB2026",
-    "lastSyncAt": "2026-11-24T13:05:28.174Z",
+    "lastSyncAt": "2026-11-24T13:51:40.964Z",
     "programs": [
       "Khot Naskhi",
       "Khot Riq'ah",

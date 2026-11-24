@@ -188,7 +188,7 @@ export const LoginPage: React.FC = () => {
                   htmlFor="login-identifier"
                   className="block text-xs font-semibold text-[#26332A] dark:text-[#ECF3EE] mb-1.5"
                 >
-                  {portalMode === 'GURU' ? 'ID Guru atau Username' : 'Username Administrator'}
+                  {portalMode === 'GURU' ? 'ID Guru atau Username' : 'ID Login Admin atau Username'}
                 </label>
                 <div className="relative">
                   {portalMode === 'GURU' ? (
@@ -204,7 +204,7 @@ export const LoginPage: React.FC = () => {
                     placeholder={
                       portalMode === 'GURU'
                         ? 'Contoh: GRU-001 atau syamsu'
-                        : 'Masukkan username administrator'
+                        : 'Contoh: ADM-001 atau admin'
                     }
                     autoComplete="username"
                     className="w-full pl-10 pr-3.5 py-2.5 text-sm rounded-xl bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C] text-[#26332A] dark:text-[#ECF3EE] focus:outline-none focus:border-[#19432D] dark:focus:border-[#A3D1B3]"
@@ -262,8 +262,8 @@ export const LoginPage: React.FC = () => {
             <KeyRound className="w-4 h-4 shrink-0 mt-0.5 text-[#19432D] dark:text-[#A3D1B3]" />
             <p>
               {portalMode === 'GURU'
-                ? 'ID Login Guru (misal GRU-001) diterbitkan oleh Administrator pada modul Data Guru. Gunakan ID tersebut atau username Anda untuk masuk.'
-                : 'Akses Administrator dilindungi autentikasi terenkripsi. Pastikan menjaga kerahasiaan kredensial Anda.'}
+                ? 'ID Login Guru (misal GRU-001) diterbitkan oleh Administrator pada modul Data Guru & Admin. Gunakan ID tersebut atau username Anda untuk masuk.'
+                : 'Masuk dengan ID Login Admin atau username Administrator. Administrator dapat mengubah atau menambah ID Login secara bebas setelah masuk.'}
             </p>
           </div>
         </div>

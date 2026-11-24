@@ -1022,21 +1022,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [createLogEntry, db, persistStateToServer, showToast]
   );
 
-  // CRUD: Guru / Users
+  // CRUD: Guru / Users (termasuk Administrator)
   const saveGuru = useCallback(
-    async (guru: User, isNew: boolean, initialPassword?: string): Promise<boolean> => {
+    async (guru: User, isNew: boolean, optionalPassword?: string): Promise<boolean> => {
       const prev = db.users.find((u) => u.userId === guru.userId);
       const nextUsers = isNew
         ? [...db.users, guru]
         : db.users.map((u) => (u.userId === guru.userId ? guru : u));
 
+      const roleLabel = guru.role === 'ADMIN' ? 'Administrator' : 'Pengajar';
       const log = createLogEntry(
         'Data Guru',
         isNew ? 'TAMBAH' : 'EDIT',
         guru.userId,
-        prev ? `${prev.namaLengkap} (${prev.statusAkun})` : '-',
-        `${guru.namaLengkap} (${guru.statusAkun})`,
-        isNew ? `Menambahkan pengajar ${guru.namaLengkap}` : `Memperbarui data pengajar ${guru.namaLengkap}`
+        prev ? `${prev.namaLengkap} (${prev.guruId || prev.username})` : '-',
+        `${guru.namaLengkap} (${guru.guruId || guru.username})`,
+        isNew
+          ? `Menambahkan akun ${roleLabel} ${guru.namaLengkap}`
+          : `Memperbarui data akun ${roleLabel} ${guru.namaLengkap}`
       );
 
       const nextState: DatabaseState = {
@@ -1045,14 +1048,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         activityLogs: [log, ...db.activityLogs],
       };
       const ok = await persistStateToServer(nextState, 'users');
-      if (ok && isNew && initialPassword) {
-        await resetUserPassword(guru.userId, initialPassword);
+      if (ok && currentUser?.userId === guru.userId) {
+        setCurrentUser(guru);
+        localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(guru));
+      }
+      if (ok && optionalPassword && optionalPassword.trim().length >= 5) {
+        await resetUserPassword(guru.userId, optionalPassword.trim());
       } else if (ok) {
-        showToast('success', isNew ? 'Guru Ditambahkan' : 'Data Guru Diperbarui', `${guru.namaLengkap} berhasil disimpan.`);
+        showToast(
+          'success',
+          isNew ? `Akun ${roleLabel} Ditambahkan` : `Data ${roleLabel} Diperbarui`,
+          `${guru.namaLengkap} (${guru.guruId || guru.username}) berhasil disimpan.`
+        );
       }
       return ok;
     },
-    [createLogEntry, db, persistStateToServer, resetUserPassword, showToast]
+    [createLogEntry, currentUser?.userId, db, persistStateToServer, resetUserPassword, showToast]
   );
 
   const deleteGuru = useCallback(

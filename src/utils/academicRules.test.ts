@@ -10,6 +10,7 @@ import {
   upsertAttendanceRecord,
   generateNomorJurnal,
   generateNextGuruId,
+  generateNextAdminId,
   findUserByLoginIdentifier,
   validatePortalRoleAccess,
 } from './academicRules';
@@ -225,5 +226,18 @@ test('validatePortalRoleAccess enforces separation between Guru and Admin login 
   assert.equal(validatePortalRoleAccess('ADMIN', 'ADMIN').allowed, true);
   assert.equal(validatePortalRoleAccess('GURU', 'ADMIN').allowed, false);
 });
+
+test('generateNextAdminId generates unique ADM-XXX IDs and resolves custom Admin IDs', () => {
+  const users = [
+    { userId: 'USR-ADMIN-01', username: 'admin', guruId: 'ADM-001' },
+    { userId: 'USR-1795523517676', username: 'ustadzsyamsu', guruId: 'USR-ADMIN-02' },
+    { userId: 'USR-GURU-01', username: 'syamsu', guruId: 'GRU-001' },
+  ];
+  assert.equal(generateNextAdminId(users), 'ADM-002');
+  assert.equal(generateNextAdminId([]), 'ADM-001');
+  assert.equal(findUserByLoginIdentifier(users, 'usr-admin-02')?.username, 'ustadzsyamsu');
+  assert.equal(findUserByLoginIdentifier(users, 'adm-001')?.username, 'admin');
+});
+
 
 
