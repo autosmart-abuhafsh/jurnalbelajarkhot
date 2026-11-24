@@ -1,4 +1,4 @@
-import { DatabaseState } from '../types';
+import type { DatabaseState } from '../types/index.ts';
 
 export const INITIAL_DATABASE_STATE: DatabaseState = {
   users: [
