@@ -85,7 +85,7 @@ export const JurnalPage: React.FC<JurnalPageProps> = ({
   // Form state (13 fields from PRD Section 9.A)
   const [editingJurnal, setEditingJurnal] = useState<JurnalPembelajaran | null>(null);
   const [formNomor, setFormNomor] = useState('');
-  const [formTanggal, setFormTanggal] = useState('2026-11-17');
+  const [formTanggal, setFormTanggal] = useState(() => new Date().toISOString().slice(0, 10));
   const [formKelasId, setFormKelasId] = useState('');
   const [formPertemuanKe, setFormPertemuanKe] = useState(1);
   const [formMateri, setFormMateri] = useState('');
@@ -108,7 +108,7 @@ export const JurnalPage: React.FC<JurnalPageProps> = ({
 
   const openCreateForm = () => {
     const defaultKelas = visibleKelas[0] || db.kelas[0];
-    const tgl = '2026-11-17';
+    const tgl = new Date().toISOString().slice(0, 10);
     const nextNo = generateNomorJurnal(tgl, db.jurnal);
     const classJurnals = db.jurnal.filter((j) => j.kelasId === defaultKelas?.kelasId);
     setEditingJurnal(null);
@@ -479,7 +479,7 @@ export const JurnalPage: React.FC<JurnalPageProps> = ({
       setDraftAbsensi(next);
     };
 
-    const handleSaveDetailAbsensi = async () => {
+    const handleSaveDetailAbsensi = async (goToPenilaian = false) => {
       const now = new Date().toISOString();
       const records: Absensi[] = classSantri.map((s) => ({
         absensiId: `ABS-${activeJurnal.jurnalId}-${s.santriId}`,
@@ -495,10 +495,13 @@ export const JurnalPage: React.FC<JurnalPageProps> = ({
         updatedAt: now,
         isDemo: activeJurnal.isDemo,
       }));
-      await saveAbsensiBatch(activeJurnal.jurnalId, records);
+      const ok = await saveAbsensiBatch(activeJurnal.jurnalId, records);
+      if (ok && goToPenilaian) {
+        setDetailTab('penilaian');
+      }
     };
 
-    const handleSaveDetailPenilaian = async () => {
+    const handleSaveDetailPenilaian = async (goToRekap = false) => {
       const now = new Date().toISOString();
       const records: Penilaian[] = [];
       for (const s of classSantri) {
@@ -528,7 +531,10 @@ export const JurnalPage: React.FC<JurnalPageProps> = ({
           });
         }
       }
-      await savePenilaianBatch(activeJurnal.jurnalId, records);
+      const ok = await savePenilaianBatch(activeJurnal.jurnalId, records);
+      if (ok && goToRekap) {
+        navigate(`${rolePrefix}/rekap-nilai`);
+      }
     };
 
     return (
@@ -724,22 +730,30 @@ export const JurnalPage: React.FC<JurnalPageProps> = ({
                   Pilih status kehadiran setiap santri atau klik Tandai Semua Hadir
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={handleMarkAllHadir}
-                  className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-[#F3F7F2] dark:bg-[#1B2B22] text-[#3B7551] dark:text-[#A3D1B3] border border-[#E3EAE3] dark:border-[#24382C] flex items-center gap-1.5"
+                  className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-[#F3F7F2] dark:bg-[#1B2B22] text-[#3B7551] dark:text-[#A3D1B3] border border-[#E3EAE3] dark:border-[#24382C] flex items-center gap-1.5 whitespace-nowrap"
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                   <span>Tandai Semua Hadir</span>
                 </button>
                 <button
                   type="button"
-                  onClick={handleSaveDetailAbsensi}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#19432D] hover:bg-[#315B43] text-white flex items-center gap-1.5"
+                  onClick={() => handleSaveDetailAbsensi(false)}
+                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#F3F7F2] dark:bg-[#1B2B22] text-[#19432D] dark:text-[#ECF3EE] border border-[#E3EAE3] dark:border-[#24382C] flex items-center gap-1.5 whitespace-nowrap"
                 >
-                  <Save className="w-3.5 h-3.5" />
+                  <Save className="w-3.5 h-3.5 shrink-0" />
                   <span>Simpan Absensi</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSaveDetailAbsensi(true)}
+                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#19432D] hover:bg-[#315B43] text-white flex items-center gap-1.5 whitespace-nowrap"
+                >
+                  <Save className="w-3.5 h-3.5 shrink-0" />
+                  <span>Simpan &amp; Lanjut ke Penilaian</span>
                 </button>
               </div>
             </div>
@@ -824,14 +838,24 @@ export const JurnalPage: React.FC<JurnalPageProps> = ({
                   Skala 0–100. Kosongkan kolom apabila santri belum dinilai (tidak dianggap 0).
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={handleSaveDetailPenilaian}
-                className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#19432D] hover:bg-[#315B43] text-white flex items-center gap-1.5"
-              >
-                <Save className="w-3.5 h-3.5" />
-                <span>Simpan Nilai Pertemuan</span>
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleSaveDetailPenilaian(false)}
+                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#F3F7F2] dark:bg-[#1B2B22] text-[#19432D] dark:text-[#ECF3EE] border border-[#E3EAE3] dark:border-[#24382C] flex items-center gap-1.5 whitespace-nowrap"
+                >
+                  <Save className="w-3.5 h-3.5 shrink-0" />
+                  <span>Simpan Nilai Pertemuan</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSaveDetailPenilaian(true)}
+                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#19432D] hover:bg-[#315B43] text-white flex items-center gap-1.5 whitespace-nowrap"
+                >
+                  <Save className="w-3.5 h-3.5 shrink-0" />
+                  <span>Simpan &amp; Buka Rekap Nilai</span>
+                </button>
+              </div>
             </div>
 
             <div className="overflow-x-auto">

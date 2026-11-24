@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Plus,
   Edit3,
@@ -6,9 +6,16 @@ import {
   KeyRound,
   History,
   X,
+  Copy,
+  Check,
+  Users,
+  UserCheck,
+  BookOpen,
+  FileText,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Role, User } from '../types';
+import { generateNextGuruId } from '../utils/academicRules';
 
 export const GuruPage: React.FC = () => {
   const {
@@ -39,12 +46,40 @@ export const GuruPage: React.FC = () => {
   // Teacher Activity Log Modal
   const [activityUser, setActivityUser] = useState<User | null>(null);
 
+  // Copy feedback + newly created teacher notice (non-sensitive ID + username only)
+  const [copiedUserId, setCopiedUserId] = useState<string | null>(null);
+  const [recentCreatedNotice, setRecentCreatedNotice] = useState<{
+    nama: string;
+    guruId: string;
+    username: string;
+  } | null>(null);
+
+  const summary = useMemo(() => {
+    const teachers = db.users.filter((u) => u.role === 'GURU');
+    const activeTeachers = teachers.filter((u) => u.statusAkun === 'Aktif');
+    const coveredClassIds = new Set<string>();
+    for (const u of teachers) {
+      for (const id of u.kelasDiampu || []) coveredClassIds.add(id);
+      if (u.guruId) {
+        for (const k of db.kelas) {
+          if (k.guruId === u.guruId) coveredClassIds.add(k.kelasId);
+        }
+      }
+    }
+    return {
+      totalTeachers: teachers.length,
+      activeTeachers: activeTeachers.length,
+      coveredClasses: coveredClassIds.size,
+      totalJournals: db.jurnal.length,
+    };
+  }, [db.users, db.kelas, db.jurnal]);
+
   const openAddModal = () => {
     setEditingUser(null);
-    setFormGuruId(`GRU-00${db.users.length + 1}`);
+    setFormGuruId(generateNextGuruId(db.users));
     setFormNama('');
     setFormUsername('');
-    setFormPassword('guru123');
+    setFormPassword('');
     setFormWhatsapp('');
     setFormRole('GURU');
     setFormStatus('Aktif');
@@ -61,7 +96,14 @@ export const GuruPage: React.FC = () => {
     setFormWhatsapp(u.whatsapp || '');
     setFormRole(u.role);
     setFormStatus(u.statusAkun);
-    setFormKelasIds(u.kelasDiampu || []);
+    const linkedKelas = db.kelas
+      .filter(
+        (k) =>
+          (u.kelasDiampu || []).includes(k.kelasId) ||
+          (Boolean(u.guruId) && k.guruId === u.guruId)
+      )
+      .map((k) => k.kelasId);
+    setFormKelasIds(linkedKelas);
     setModalOpen(true);
   };
 
@@ -71,18 +113,80 @@ export const GuruPage: React.FC = () => {
     );
   };
 
+  const handleCopyLoginInfo = async (u: User) => {
+    const loginId = u.guruId || u.username;
+    const text = `Akses Portal Guru Belajar Khot\nNama: ${u.namaLengkap}\nID Guru: ${loginId}\nUsername: ${u.username}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedUserId(u.userId);
+      setTimeout(() => setCopiedUserId(null), 2000);
+      showToast(
+        'info',
+        'Info Login Disalin',
+        `ID Guru (${loginId}) dan username ${u.username} disalin ke clipboard.`
+      );
+    } catch {
+      showToast('info', 'Info Login Guru', `ID Guru: ${loginId} · Username: ${u.username}`);
+    }
+  };
+
   const handleSaveGuru = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formNama.trim() || !formUsername.trim()) {
-      showToast('warning', 'Data Belum Lengkap', 'Nama Lengkap dan Username wajib diisi.');
+    const trimmedNama = formNama.trim();
+    const normalizedUsername = formUsername.trim().toLowerCase();
+    const normalizedGuruId = formGuruId.trim().toUpperCase();
+
+    if (!trimmedNama || !normalizedUsername || !normalizedGuruId) {
+      showToast(
+        'warning',
+        'Data Belum Lengkap',
+        'ID Guru, Nama Lengkap, dan Username wajib diisi.'
+      );
+      return;
+    }
+
+    const duplicateUsername = db.users.some(
+      (u) =>
+        u.userId !== editingUser?.userId &&
+        u.username.trim().toLowerCase() === normalizedUsername
+    );
+    if (duplicateUsername) {
+      showToast(
+        'error',
+        'Username Sudah Digunakan',
+        `Username "${normalizedUsername}" sudah terdaftar pada akun lain.`
+      );
+      return;
+    }
+
+    const duplicateGuruId = db.users.some(
+      (u) =>
+        u.userId !== editingUser?.userId &&
+        (u.guruId || '').trim().toUpperCase() === normalizedGuruId
+    );
+    if (duplicateGuruId) {
+      showToast(
+        'error',
+        'ID Guru Sudah Digunakan',
+        `ID Guru "${normalizedGuruId}" sudah terdaftar pada akun lain.`
+      );
+      return;
+    }
+
+    if (!editingUser && formPassword.trim().length < 5) {
+      showToast(
+        'warning',
+        'Password Awal Minimal 5 Karakter',
+        'Tentukan password awal minimal 5 karakter untuk akun baru.'
+      );
       return;
     }
 
     const record: User = {
       userId: editingUser ? editingUser.userId : 'USR-' + Date.now(),
-      guruId: formGuruId.trim() || `GRU-${Date.now().toString().slice(-3)}`,
-      namaLengkap: formNama.trim(),
-      username: formUsername.trim().toLowerCase(),
+      guruId: normalizedGuruId,
+      namaLengkap: trimmedNama,
+      username: normalizedUsername,
       role: formRole,
       whatsapp: formWhatsapp.trim(),
       kelasDiampu: formKelasIds,
@@ -90,13 +194,25 @@ export const GuruPage: React.FC = () => {
       isDemo: editingUser ? editingUser.isDemo : false,
     };
 
-    const ok = await saveGuru(record, !editingUser, formPassword || undefined);
-    if (ok) setModalOpen(false);
+    const ok = await saveGuru(record, !editingUser, formPassword.trim() || undefined);
+    if (ok) {
+      if (!editingUser && record.role === 'GURU') {
+        setRecentCreatedNotice({
+          nama: record.namaLengkap,
+          guruId: record.guruId || record.userId,
+          username: record.username,
+        });
+      }
+      setModalOpen(false);
+    }
   };
 
   const handleResetPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!resetTarget || !newPasswordInput.trim()) return;
+    if (!resetTarget || newPasswordInput.trim().length < 5) {
+      showToast('warning', 'Password Terlalu Pendek', 'Password baru minimal 5 karakter.');
+      return;
+    }
     const res = await resetUserPassword(resetTarget.userId, newPasswordInput.trim());
     if (res.success) {
       setResetTarget(null);
@@ -111,7 +227,7 @@ export const GuruPage: React.FC = () => {
     }
     askConfirm({
       title: `Hapus Data Pengajar ${u.namaLengkap}?`,
-      message: `Akun pengguna ${u.username} akan dihapus secara permanen dari sistem.`,
+      message: `Akun pengguna ${u.username} (${u.guruId || u.userId}) akan dihapus secara permanen dari sistem.`,
       confirmLabel: 'Ya, Hapus Pengajar',
       danger: true,
       onConfirm: async () => {
@@ -126,29 +242,88 @@ export const GuruPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-[#26332A] dark:text-[#ECF3EE]">
-            Modul Data Guru &amp; Hak Akses
+            Modul Data Guru &amp; ID Login Pengajar
           </h1>
           <p className="text-xs text-[#6B776D] dark:text-[#A3D1B3]/80 mt-0.5">
-            Kelola akun pengajar Belajar Khot, pembagian kelas yang diampu, dan keamanan kredensial login
+            Kelola ID Login Guru, pembagian kelas binaan untuk pengisian jurnal &amp; absensi, serta
+            keamanan kredensial akses
           </p>
         </div>
 
         <button
           type="button"
           onClick={openAddModal}
-          className="px-4 py-2.5 rounded-lg text-xs font-semibold bg-[#19432D] hover:bg-[#315B43] text-white flex items-center gap-1.5 self-start"
+          className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-[#19432D] hover:bg-[#315B43] text-white flex items-center gap-1.5 self-start whitespace-nowrap shrink-0"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4 shrink-0" />
           <span>Tambah Guru / Pengajar</span>
         </button>
       </div>
+
+      {/* KPI Strip */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="rounded-xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-4">
+          <div className="flex items-center justify-between text-xs text-[#6B776D] dark:text-[#A3D1B3]">
+            <span>Total Pengajar</span>
+            <Users className="w-4 h-4 text-[#19432D] dark:text-[#A3D1B3]" />
+          </div>
+          <p className="mt-2 text-2xl font-bold tabular-nums">{summary.totalTeachers}</p>
+        </div>
+        <div className="rounded-xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-4">
+          <div className="flex items-center justify-between text-xs text-[#6B776D] dark:text-[#A3D1B3]">
+            <span>Akun Guru Aktif</span>
+            <UserCheck className="w-4 h-4 text-[#3B7551]" />
+          </div>
+          <p className="mt-2 text-2xl font-bold tabular-nums text-[#3B7551] dark:text-[#A3D1B3]">
+            {summary.activeTeachers}
+          </p>
+        </div>
+        <div className="rounded-xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-4">
+          <div className="flex items-center justify-between text-xs text-[#6B776D] dark:text-[#A3D1B3]">
+            <span>Kelas Terampu</span>
+            <BookOpen className="w-4 h-4 text-[#19432D] dark:text-[#A3D1B3]" />
+          </div>
+          <p className="mt-2 text-2xl font-bold tabular-nums">{summary.coveredClasses}</p>
+        </div>
+        <div className="rounded-xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-4">
+          <div className="flex items-center justify-between text-xs text-[#6B776D] dark:text-[#A3D1B3]">
+            <span>Total Jurnal Pertemuan</span>
+            <FileText className="w-4 h-4 text-[#19432D] dark:text-[#A3D1B3]" />
+          </div>
+          <p className="mt-2 text-2xl font-bold tabular-nums">{summary.totalJournals}</p>
+        </div>
+      </div>
+
+      {recentCreatedNotice && (
+        <div className="rounded-xl bg-[#F3F7F2] dark:bg-[#1B2B22] border border-[#3B7551]/40 p-4 flex items-center justify-between gap-4">
+          <div className="text-xs">
+            <p className="font-bold text-[#19432D] dark:text-[#A3D1B3]">
+              Akun Guru Berhasil Dibuat — {recentCreatedNotice.nama}
+            </p>
+            <p className="mt-1 text-[#26332A] dark:text-[#ECF3EE]">
+              Berikan ID Login Guru{' '}
+              <span className="font-mono font-bold">{recentCreatedNotice.guruId}</span> (atau
+              username <span className="font-mono font-bold">{recentCreatedNotice.username}</span>)
+              kepada pengajar untuk masuk melalui tab <span className="font-semibold">Portal Guru</span>.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setRecentCreatedNotice(null)}
+            aria-label="Tutup pemberitahuan"
+            className="p-1.5 rounded-lg text-[#6B776D] hover:text-[#26332A] dark:hover:text-white shrink-0"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       <div className="rounded-2xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-sm">
             <thead>
               <tr className="border-b border-[#E3EAE3] dark:border-[#24382C] bg-[#F3F7F2]/60 dark:bg-[#1B2B22]/60 text-xs font-semibold text-[#6B776D] dark:text-[#A3D1B3]">
-                <th className="py-3.5 pl-6 pr-3">ID Guru</th>
+                <th className="py-3.5 pl-6 pr-3">ID Login Guru</th>
                 <th className="py-3.5 px-3">Nama Lengkap</th>
                 <th className="py-3.5 px-3">Username &amp; Hak Akses</th>
                 <th className="py-3.5 px-3">WhatsApp</th>
@@ -160,11 +335,15 @@ export const GuruPage: React.FC = () => {
             <tbody className="divide-y divide-[#E3EAE3] dark:divide-[#24382C]">
               {db.users.map((u) => {
                 const assignedNames = db.kelas
-                  .filter((k) => u.kelasDiampu.includes(k.kelasId))
+                  .filter(
+                    (k) =>
+                      (u.kelasDiampu || []).includes(k.kelasId) ||
+                      (Boolean(u.guruId) && k.guruId === u.guruId)
+                  )
                   .map((k) => k.namaKelas);
                 return (
                   <tr key={u.userId} className="hover:bg-[#F3F7F2]/40 dark:hover:bg-[#1B2B22]/40">
-                    <td className="py-3.5 pl-6 pr-3 font-mono text-xs font-semibold">
+                    <td className="py-3.5 pl-6 pr-3 font-mono text-xs font-semibold text-[#19432D] dark:text-[#A3D1B3]">
                       {u.guruId || u.userId}
                     </td>
                     <td className="py-3.5 px-3 font-semibold">{u.namaLengkap}</td>
@@ -176,7 +355,15 @@ export const GuruPage: React.FC = () => {
                       {u.whatsapp || '-'}
                     </td>
                     <td className="py-3.5 px-3 text-xs">
-                      {assignedNames.length > 0 ? assignedNames.join(', ') : 'Semua Kelas'}
+                      {u.role === 'ADMIN' ? (
+                        <span className="text-[#6B776D] dark:text-[#A3D1B3]">
+                          Semua Kelas (Administrator)
+                        </span>
+                      ) : assignedNames.length > 0 ? (
+                        assignedNames.join(', ')
+                      ) : (
+                        <span className="text-[#A06A18]">Belum Ditugaskan</span>
+                      )}
                     </td>
                     <td className="py-3.5 px-3 text-xs font-semibold">
                       <span
@@ -190,11 +377,27 @@ export const GuruPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="py-3.5 pl-3 pr-6 text-right whitespace-nowrap">
-                      <div className="inline-flex items-center gap-1.5">
+                      <div className="inline-flex items-center gap-1">
+                        {u.role === 'GURU' && (
+                          <button
+                            type="button"
+                            onClick={() => handleCopyLoginInfo(u)}
+                            title="Salin ID Guru & Username"
+                            aria-label={`Salin Info Login ${u.namaLengkap}`}
+                            className="p-1.5 rounded-lg text-[#6B776D] hover:text-[#19432D] hover:bg-[#F3F7F2] dark:hover:bg-[#1B2B22]"
+                          >
+                            {copiedUserId === u.userId ? (
+                              <Check className="w-4 h-4 text-[#3B7551]" />
+                            ) : (
+                              <Copy className="w-4 h-4" />
+                            )}
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => setActivityUser(u)}
                           title="Lihat Aktivitas Guru"
+                          aria-label={`Riwayat Aktivitas ${u.namaLengkap}`}
                           className="p-1.5 rounded-lg text-[#6B776D] hover:text-[#19432D] hover:bg-[#F3F7F2] dark:hover:bg-[#1B2B22]"
                         >
                           <History className="w-4 h-4" />
@@ -206,6 +409,7 @@ export const GuruPage: React.FC = () => {
                             setNewPasswordInput('');
                           }}
                           title="Reset Password"
+                          aria-label={`Reset Password ${u.namaLengkap}`}
                           className="p-1.5 rounded-lg text-[#6B776D] hover:text-[#19432D] hover:bg-[#F3F7F2] dark:hover:bg-[#1B2B22]"
                         >
                           <KeyRound className="w-4 h-4" />
@@ -253,6 +457,7 @@ export const GuruPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
+                aria-label="Tutup Form Pengajar"
                 className="p-1 text-[#6B776D]"
               >
                 <X className="w-5 h-5" />
@@ -261,17 +466,24 @@ export const GuruPage: React.FC = () => {
             <form onSubmit={handleSaveGuru} className="mt-4 space-y-4 text-xs">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-semibold mb-1">ID Guru</label>
+                  <label htmlFor="guru-id-input" className="block font-semibold mb-1">
+                    ID Login Guru
+                  </label>
                   <input
+                    id="guru-id-input"
                     type="text"
                     value={formGuruId}
                     onChange={(e) => setFormGuruId(e.target.value)}
+                    placeholder="GRU-003"
                     className="w-full px-3 py-2 font-mono rounded-lg bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold mb-1">Status Akun</label>
+                  <label htmlFor="guru-status-select" className="block font-semibold mb-1">
+                    Status Akun
+                  </label>
                   <select
+                    id="guru-status-select"
                     value={formStatus}
                     onChange={(e) => setFormStatus(e.target.value as 'Aktif' | 'Nonaktif')}
                     className="w-full px-3 py-2 rounded-lg bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
@@ -283,8 +495,11 @@ export const GuruPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold mb-1">Nama Lengkap &amp; Gelar</label>
+                <label htmlFor="guru-nama-input" className="block font-semibold mb-1">
+                  Nama Lengkap &amp; Gelar
+                </label>
                 <input
+                  id="guru-nama-input"
                   type="text"
                   value={formNama}
                   onChange={(e) => setFormNama(e.target.value)}
@@ -295,17 +510,24 @@ export const GuruPage: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-semibold mb-1">Username Login</label>
+                  <label htmlFor="guru-username-input" className="block font-semibold mb-1">
+                    Username Login
+                  </label>
                   <input
+                    id="guru-username-input"
                     type="text"
                     value={formUsername}
                     onChange={(e) => setFormUsername(e.target.value)}
+                    placeholder="Contoh: ahmad"
                     className="w-full px-3 py-2 font-mono rounded-lg bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold mb-1">Hak Akses</label>
+                  <label htmlFor="guru-role-select" className="block font-semibold mb-1">
+                    Hak Akses
+                  </label>
                   <select
+                    id="guru-role-select"
                     value={formRole}
                     onChange={(e) => setFormRole(e.target.value as Role)}
                     className="w-full px-3 py-2 rounded-lg bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
@@ -318,8 +540,11 @@ export const GuruPage: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-semibold mb-1">Nomor WhatsApp</label>
+                  <label htmlFor="guru-wa-input" className="block font-semibold mb-1">
+                    Nomor WhatsApp
+                  </label>
                   <input
+                    id="guru-wa-input"
                     type="text"
                     value={formWhatsapp}
                     onChange={(e) => setFormWhatsapp(e.target.value)}
@@ -329,11 +554,15 @@ export const GuruPage: React.FC = () => {
                 </div>
                 {!editingUser && (
                   <div>
-                    <label className="block font-semibold mb-1">Password Awal</label>
+                    <label htmlFor="guru-pw-input" className="block font-semibold mb-1">
+                      Password Awal (Min. 5 Karakter)
+                    </label>
                     <input
-                      type="text"
+                      id="guru-pw-input"
+                      type="password"
                       value={formPassword}
                       onChange={(e) => setFormPassword(e.target.value)}
+                      placeholder="Buat password awal guru"
                       className="w-full px-3 py-2 font-mono rounded-lg bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
                     />
                   </div>

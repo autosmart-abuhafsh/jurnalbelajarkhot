@@ -59,9 +59,13 @@ export default defineConfig(({mode}) => {
       },
     ],
     resolve: {
+      dedupe: ['react', 'react-dom'],
       alias: {
         '@': path.resolve(__dirname, '.'),
       },
+    },
+    optimizeDeps: {
+      include: ['react', 'react-dom', 'react-dom/client', 'lucide-react', 'motion/react'],
     },
     server: {
       host: '0.0.0.0',

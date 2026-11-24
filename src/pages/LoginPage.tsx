@@ -1,36 +1,46 @@
 import React, { useState } from 'react';
-import { Lock, User as UserIcon, Sun, Moon, ShieldCheck, BookOpen } from 'lucide-react';
+import {
+  Lock,
+  User as UserIcon,
+  Sun,
+  Moon,
+  ShieldCheck,
+  BookOpen,
+  Eye,
+  EyeOff,
+  KeyRound,
+  BadgeCheck,
+} from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { LogoBelajarKhot } from '../components/LogoBelajarKhot';
 
 export const LoginPage: React.FC = () => {
   const { login, theme, toggleTheme, db } = useApp();
-  const [username, setUsername] = useState('');
+  const [portalMode, setPortalMode] = useState<'GURU' | 'ADMIN'>('GURU');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  const handlePortalChange = (mode: 'GURU' | 'ADMIN') => {
+    setPortalMode(mode);
+    setErrorMsg('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
-    if (!username.trim() || !password.trim()) {
-      setErrorMsg('Silakan isi username dan password terlebih dahulu.');
+    if (!identifier.trim() || !password.trim()) {
+      setErrorMsg(
+        portalMode === 'GURU'
+          ? 'Silakan isi ID Guru / Username dan password terlebih dahulu.'
+          : 'Silakan isi Username Administrator dan password terlebih dahulu.'
+      );
       return;
     }
     setSubmitting(true);
-    const res = await login(username.trim(), password);
-    setSubmitting(false);
-    if (!res.success) {
-      setErrorMsg(res.error || 'Autentikasi gagal.');
-    }
-  };
-
-  const handleQuickLogin = async (u: string, p: string) => {
-    setUsername(u);
-    setPassword(p);
-    setErrorMsg('');
-    setSubmitting(true);
-    const res = await login(u, p);
+    const res = await login(identifier.trim(), password, portalMode);
     setSubmitting(false);
     if (!res.success) {
       setErrorMsg(res.error || 'Autentikasi gagal.');
@@ -53,9 +63,13 @@ export const LoginPage: React.FC = () => {
           type="button"
           onClick={toggleTheme}
           aria-label={theme === 'dark' ? 'Aktifkan Mode Terang' : 'Aktifkan Mode Gelap'}
-          className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] flex items-center gap-2 hover:bg-[#F3F7F2] dark:hover:bg-[#1B2B22] transition-colors shrink-0"
+          className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] flex items-center gap-2 hover:bg-[#F3F7F2] dark:hover:bg-[#1B2B22] transition-colors shrink-0 whitespace-nowrap"
         >
-          {theme === 'dark' ? <Sun className="w-4 h-4 text-[#A3D1B3]" /> : <Moon className="w-4 h-4 text-[#19432D]" />}
+          {theme === 'dark' ? (
+            <Sun className="w-4 h-4 text-[#A3D1B3]" />
+          ) : (
+            <Moon className="w-4 h-4 text-[#19432D]" />
+          )}
           <span>{theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}</span>
         </button>
       </div>
@@ -89,12 +103,12 @@ export const LoginPage: React.FC = () => {
                 className="text-sm font-semibold flex items-center gap-2"
                 style={{ color: temaCfg.warnaAksen }}
               >
-                <ShieldCheck className="w-4 h-4 shrink-0" />
-                <span>Akses Administrator</span>
+                <BookOpen className="w-4 h-4 shrink-0" />
+                <span>Portal Guru / Pengajar</span>
               </h2>
               <p className="mt-1 text-xs text-[#ECF3EE]/85 leading-relaxed">
-                Kelola master santri, kelas, pengajar, rubrik penilaian Khot Naskhi &amp; Riq&apos;ah,
-                serta kustomisasi logo dan pengesahan rapor akademik.
+                Masuk dengan ID Guru resmi untuk mengisi jurnal pertemuan, absensi santri, nilai
+                rubrik khot, rekap nilai, dan cetak rapor kelas binaan.
               </p>
             </div>
             <div>
@@ -102,26 +116,62 @@ export const LoginPage: React.FC = () => {
                 className="text-sm font-semibold flex items-center gap-2"
                 style={{ color: temaCfg.warnaAksen }}
               >
-                <BookOpen className="w-4 h-4 shrink-0" />
-                <span>Akses Guru / Pengajar</span>
+                <ShieldCheck className="w-4 h-4 shrink-0" />
+                <span>Portal Administrator</span>
               </h2>
               <p className="mt-1 text-xs text-[#ECF3EE]/85 leading-relaxed">
-                Input jurnal pertemuan, absensi satu klik, penilaian per kriteria, catatan
-                perkembangan, dan cetak rapor kelas.
+                Akses terproteksi untuk mengelola master santri, kelas, akun &amp; ID Guru, rubrik
+                penilaian, serta pengesahan rapor lembaga.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Right Column: Login Card */}
+        {/* Right Column: Authenticated Login Card */}
         <div className="lg:col-span-5 rounded-2xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-6 sm:p-8 flex flex-col justify-between shadow-sm">
           <div>
             <h2 className="text-xl font-bold text-[#26332A] dark:text-[#ECF3EE]">
               Masuk ke Akun Akademik
             </h2>
             <p className="text-xs text-[#6B776D] dark:text-[#A3D1B3]/80 mt-1">
-              Gunakan kredensial Administrator atau Guru Pengajar Belajar Khot.
+              Pilih portal sesuai peran Anda dan masukkan kredensial yang telah didaftarkan.
             </p>
+
+            {/* Segmented Portal Mode Switcher */}
+            <div
+              role="tablist"
+              aria-label="Pilih Portal Login"
+              className="mt-4 grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-[#F3F7F2] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={portalMode === 'GURU'}
+                onClick={() => handlePortalChange('GURU')}
+                className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all whitespace-nowrap ${
+                  portalMode === 'GURU'
+                    ? 'bg-[#FFFFFF] dark:bg-[#142019] text-[#19432D] dark:text-[#A3D1B3] shadow-xs border border-[#E3EAE3] dark:border-[#24382C]'
+                    : 'text-[#6B776D] dark:text-[#ECF3EE]/70 hover:text-[#26332A] dark:hover:text-white'
+                }`}
+              >
+                <BookOpen className="w-3.5 h-3.5 shrink-0" />
+                <span>Portal Guru</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={portalMode === 'ADMIN'}
+                onClick={() => handlePortalChange('ADMIN')}
+                className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all whitespace-nowrap ${
+                  portalMode === 'ADMIN'
+                    ? 'bg-[#FFFFFF] dark:bg-[#142019] text-[#19432D] dark:text-[#A3D1B3] shadow-xs border border-[#E3EAE3] dark:border-[#24382C]'
+                    : 'text-[#6B776D] dark:text-[#ECF3EE]/70 hover:text-[#26332A] dark:hover:text-white'
+                }`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                <span>Administrator</span>
+              </button>
+            </div>
 
             {errorMsg && (
               <div
@@ -135,19 +185,27 @@ export const LoginPage: React.FC = () => {
             <form onSubmit={handleSubmit} className="mt-5 space-y-4">
               <div>
                 <label
-                  htmlFor="login-username"
+                  htmlFor="login-identifier"
                   className="block text-xs font-semibold text-[#26332A] dark:text-[#ECF3EE] mb-1.5"
                 >
-                  Username
+                  {portalMode === 'GURU' ? 'ID Guru atau Username' : 'Username Administrator'}
                 </label>
                 <div className="relative">
-                  <UserIcon className="w-4 h-4 text-[#6B776D] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  {portalMode === 'GURU' ? (
+                    <BadgeCheck className="w-4 h-4 text-[#6B776D] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  ) : (
+                    <UserIcon className="w-4 h-4 text-[#6B776D] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  )}
                   <input
-                    id="login-username"
+                    id="login-identifier"
                     type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Contoh: admin atau syamsu"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    placeholder={
+                      portalMode === 'GURU'
+                        ? 'Contoh: GRU-001 atau syamsu'
+                        : 'Masukkan username administrator'
+                    }
                     autoComplete="username"
                     className="w-full pl-10 pr-3.5 py-2.5 text-sm rounded-xl bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C] text-[#26332A] dark:text-[#ECF3EE] focus:outline-none focus:border-[#19432D] dark:focus:border-[#A3D1B3]"
                   />
@@ -165,52 +223,48 @@ export const LoginPage: React.FC = () => {
                   <Lock className="w-4 h-4 text-[#6B776D] absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     id="login-password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Masukkan password"
+                    placeholder="Masukkan password akun"
                     autoComplete="current-password"
-                    className="w-full pl-10 pr-3.5 py-2.5 text-sm rounded-xl bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C] text-[#26332A] dark:text-[#ECF3EE] focus:outline-none focus:border-[#19432D] dark:focus:border-[#A3D1B3]"
+                    className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C] text-[#26332A] dark:text-[#ECF3EE] focus:outline-none focus:border-[#19432D] dark:focus:border-[#A3D1B3]"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6B776D] hover:text-[#19432D] dark:hover:text-[#A3D1B3] p-0.5"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-2.5 px-4 rounded-xl text-white text-sm font-semibold transition-opacity hover:opacity-95 disabled:opacity-50 shadow-sm"
+                className="w-full py-2.5 px-4 rounded-xl text-white text-sm font-semibold transition-opacity hover:opacity-95 disabled:opacity-50 shadow-sm whitespace-nowrap"
                 style={{
                   background: `linear-gradient(135deg, ${temaCfg.warnaUtama} 0%, ${temaCfg.warnaGradasi} 100%)`,
                 }}
               >
-                {submitting ? 'Memverifikasi Akses...' : 'Masuk ke Sistem'}
+                {submitting
+                  ? 'Memverifikasi Akses...'
+                  : portalMode === 'GURU'
+                    ? 'Masuk Portal Guru'
+                    : 'Masuk sebagai Administrator'}
               </button>
             </form>
           </div>
 
-          {/* Demo Account Quick Access */}
-          <div className="mt-6 pt-5 border-t border-[#E3EAE3] dark:border-[#24382C]">
-            <p className="text-xs font-semibold text-[#6B776D] dark:text-[#A3D1B3] mb-2.5">
-              Akses Cepat Demonstrasi Sistem:
+          <div className="mt-6 pt-4 border-t border-[#E3EAE3] dark:border-[#24382C] flex items-start gap-2.5 text-xs text-[#6B776D] dark:text-[#A3D1B3]/80 leading-relaxed">
+            <KeyRound className="w-4 h-4 shrink-0 mt-0.5 text-[#19432D] dark:text-[#A3D1B3]" />
+            <p>
+              {portalMode === 'GURU'
+                ? 'ID Login Guru (misal GRU-001) diterbitkan oleh Administrator pada modul Data Guru. Gunakan ID tersebut atau username Anda untuk masuk.'
+                : 'Akses Administrator dilindungi autentikasi terenkripsi. Pastikan menjaga kerahasiaan kredensial Anda.'}
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('admin', 'admin123')}
-                className="px-3.5 py-2.5 rounded-xl text-xs font-medium bg-[#F3F7F2] dark:bg-[#1B2B22] hover:bg-[#E3EAE3] dark:hover:bg-[#24382C] text-[#19432D] dark:text-[#ECF3EE] border border-[#E3EAE3] dark:border-[#24382C] text-left transition-colors"
-              >
-                <span className="block font-bold">Masuk Administrator</span>
-                <span className="text-[#6B776D] dark:text-[#A3D1B3]/80 font-mono">admin / admin123</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('syamsu', 'guru123')}
-                className="px-3.5 py-2.5 rounded-xl text-xs font-medium bg-[#F3F7F2] dark:bg-[#1B2B22] hover:bg-[#E3EAE3] dark:hover:bg-[#24382C] text-[#19432D] dark:text-[#ECF3EE] border border-[#E3EAE3] dark:border-[#24382C] text-left transition-colors"
-              >
-                <span className="block font-bold">Masuk Guru (Ust. Syamsu)</span>
-                <span className="text-[#6B776D] dark:text-[#A3D1B3]/80 font-mono">syamsu / guru123</span>
-              </button>
-            </div>
           </div>
         </div>
       </div>

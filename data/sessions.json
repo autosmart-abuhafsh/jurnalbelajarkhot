@@ -3,5 +3,35 @@
     "userId": "USR-ADMIN-01",
     "role": "ADMIN",
     "createdAt": "2026-11-17T09:27:38.956Z"
+  },
+  "45ac37a3776fad189d7ff49740f76dffb55eb46b95bfc696": {
+    "userId": "USR-GURU-01",
+    "role": "GURU",
+    "createdAt": "2026-11-24T12:58:47.827Z"
+  },
+  "f06c1ec85ea23ccffcb05d89df70674dc3390f8ff962cecd": {
+    "userId": "USR-GURU-01",
+    "role": "GURU",
+    "createdAt": "2026-11-24T13:00:17.809Z"
+  },
+  "8b377864ffe2abb81b4beb1842005eb187e587f52b860108": {
+    "userId": "USR-GURU-01",
+    "role": "GURU",
+    "createdAt": "2026-11-24T13:01:51.416Z"
+  },
+  "6380c2cd0d46843e18f2f43b25aa390c44c4ad8284f361eb": {
+    "userId": "USR-ADMIN-01",
+    "role": "ADMIN",
+    "createdAt": "2026-11-24T13:03:46.294Z"
+  },
+  "866198713ef8b8be4016d82f2bfd37b0656f291bc9ddfbb3": {
+    "userId": "USR-ADMIN-01",
+    "role": "ADMIN",
+    "createdAt": "2026-11-24T13:04:54.779Z"
+  },
+  "a59d5ec29d3f3a943c6c99d246a39348e62050a4f8cb62ca": {
+    "userId": "USR-ADMIN-01",
+    "role": "ADMIN",
+    "createdAt": "2026-11-24T13:05:26.246Z"
   }
 }

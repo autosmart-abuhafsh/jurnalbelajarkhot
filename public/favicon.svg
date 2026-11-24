@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="bk-bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#19432D" />
+      <stop offset="100%" stop-color="#315B43" />
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#bk-bg)" />
+  <rect x="4.5" y="4.5" width="55" height="55" rx="13.5" stroke="#FFFFFF" stroke-opacity="0.28" stroke-width="1.2" />
+  <g opacity="0.22">
+    <rect x="15" y="13" width="34" height="34" rx="4" stroke="#FFFFFF" stroke-width="1.4" />
+    <rect x="15" y="13" width="34" height="34" rx="4" transform="rotate(45 32 30)" stroke="#FFFFFF" stroke-width="1.4" />
+  </g>
+  <path d="M32 8.5L43.5 25L39.5 44.5H24.5L20.5 25L32 8.5Z" fill="#FFFFFF" fill-opacity="0.08" stroke="#E5B84B" stroke-width="2.2" stroke-linejoin="round" />
+  <line x1="32" y1="9.5" x2="32" y2="20.5" stroke="#E5B84B" stroke-width="1.8" stroke-linecap="round" />
+  <circle cx="32" cy="22" r="2" fill="#E5B84B" />
+  <polygon points="32,25.2 34.4,27.5 32,29.8 29.6,27.5" fill="#FFFFFF" />
+  <path d="M25.5 33.2C27.5 31.4 31.2 31.2 36.8 32.2C37.6 32.3 37.8 33.3 37 33.7C33.4 35.1 28.2 37.2 28.2 41.2C28.2 44.3 31.8 45.8 36.8 44.3" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M15.5 49C21 46.2 26.8 46.5 32 49.2C37.2 46.5 43 46.2 48.5 49" stroke="#A3D1B3" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M21 53C25 50.8 28.8 51 32 53C35.2 51 39 50.8 43 53" stroke="#E5B84B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

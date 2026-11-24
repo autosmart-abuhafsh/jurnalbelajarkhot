@@ -14,7 +14,12 @@ import {
   User,
 } from '../types';
 import { INITIAL_DATABASE_STATE } from '../data/seedData';
-import { upsertAttendanceRecord } from '../utils/academicRules';
+import {
+  findUserByLoginIdentifier,
+  upsertAttendanceRecord,
+  validatePortalRoleAccess,
+} from '../utils/academicRules';
+import { syncDocumentFavicon } from '../utils/faviconSync';
 import {
   normalizeInternalRoute,
   buildBrowserHistoryUrl,
@@ -44,6 +49,8 @@ interface AppContextType {
   currentUser: User | null;
   authToken: string | null;
   isLoading: boolean;
+  isTransitioning: boolean;
+  transitionMessage: { title: string; subtitle: string };
   isSaving: boolean;
   dbStatus: 'connected' | 'syncing' | 'error';
   isEnvGasConfigured: boolean;
@@ -60,9 +67,17 @@ interface AppContextType {
   closeConfirm: () => void;
 
   // Auth actions
-  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (
+    username: string,
+    password: string,
+    portalMode?: 'GURU' | 'ADMIN'
+  ) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   resetUserPassword: (targetUserId: string, newPassword: string) => Promise<{ success: boolean; message?: string }>;
+  changeOwnPassword: (
+    currentPassword: string,
+    newPassword: string
+  ) => Promise<{ success: boolean; message?: string }>;
 
   // Scoped getters for current user (Admin sees all, Guru sees assigned classes)
   visibleKelas: Kelas[];
@@ -227,12 +242,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const saved = localStorage.getItem(STORAGE_KEY_USER);
       if (saved) return JSON.parse(saved);
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('autostart') === '1') {
-        const adminUser = INITIAL_DATABASE_STATE.users[0];
-        localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(adminUser));
-        return adminUser;
-      }
     } catch {
       // ignore
     }
@@ -240,6 +249,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
+  const [transitionMessage, setTransitionMessage] = useState<{ title: string; subtitle: string }>({
+    title: 'Memverifikasi Akses Portal...',
+    subtitle: 'Menyiapkan ruang kerja jurnal dan data santri',
+  });
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [dbStatus, setDbStatus] = useState<'connected' | 'syncing' | 'error'>('connected');
 
@@ -282,6 +296,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     localStorage.setItem(STORAGE_KEY_THEME, theme);
   }, [theme]);
+
+  // Sync browser tab & search favicon dynamically with active app logo & theme
+  useEffect(() => {
+    syncDocumentFavicon(db.pengaturan?.logoConfig, db.pengaturan?.temaConfig);
+  }, [db.pengaturan?.logoConfig, db.pengaturan?.temaConfig]);
 
   const toggleTheme = useCallback(() => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
@@ -355,8 +374,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     let mounted = true;
     async function fetchInitial() {
+      const startedAt = Date.now();
       setIsLoading(true);
       try {
+        // Validate existing server token if present
+        const existingToken = localStorage.getItem(STORAGE_KEY_TOKEN);
+        if (existingToken && !existingToken.startsWith('STATIC-TOKEN-')) {
+          try {
+            const meRes = await fetch('/api/auth/me', {
+              headers: { Authorization: `Bearer ${existingToken}` },
+            });
+            const meType = meRes.headers.get('content-type') || '';
+            if (meType.includes('application/json')) {
+              const meJson = await meRes.json();
+              if (!meRes.ok || !meJson.success) {
+                if (mounted) {
+                  setCurrentUser(null);
+                  setAuthToken(null);
+                  localStorage.removeItem(STORAGE_KEY_USER);
+                  localStorage.removeItem(STORAGE_KEY_TOKEN);
+                }
+              } else if (mounted && meJson.user) {
+                setCurrentUser(meJson.user);
+                localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(meJson.user));
+              }
+            }
+          } catch {
+            // Static host fallback
+          }
+        }
+
         const localGas = urlPairedGas || db.pengaturan?.gasWebAppUrl || '';
         let serverHandled = false;
         try {
@@ -411,6 +458,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setDbStatus('connected');
         }
       } finally {
+        const elapsed = Date.now() - startedAt;
+        const remaining = Math.max(0, 480 - elapsed);
+        if (remaining > 0) {
+          await new Promise((r) => setTimeout(r, remaining));
+        }
         if (mounted) setIsLoading(false);
       }
     }
@@ -529,9 +581,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             showToast('error', 'Gagal Menyimpan Data', json.error || 'Terjadi gangguan pada server.');
             return false;
           }
-          // Jika server belum menyinkronkan ke GAS namun ada URL GAS di client, sinkronkan langsung
+          // Jika server belum menyinkronkan ke GAS namun ada URL GAS di client, sinkronkan di background
           if (!json.gasSynced && resolved.gasWebAppUrl) {
-            await directPushToGas(resolved.gasWebAppUrl, nextState, 'syncSnapshot');
+            void directPushToGas(resolved.gasWebAppUrl, nextState, 'syncSnapshot');
           }
           setDbStatus('connected');
           return true;
@@ -584,30 +636,59 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   );
 
   const login = useCallback(
-    async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
-      const normalizedUsername = username.trim().toLowerCase();
+    async (
+      username: string,
+      password: string,
+      portalMode?: 'GURU' | 'ADMIN'
+    ): Promise<{ success: boolean; error?: string }> => {
+      const normalizedIdentifier = username.trim().toLowerCase();
+      setTransitionMessage({
+        title: 'Memverifikasi ID & Kredensial...',
+        subtitle:
+          portalMode === 'GURU'
+            ? 'Mengautentikasi akun pengajar & kelas binaan Anda'
+            : 'Mengautentikasi akses sistem akademik Belajar Khot',
+      });
+      setIsTransitioning(true);
+
+      const completeLoginTransition = async (user: User, token: string) => {
+        setTransitionMessage({
+          title: `Selamat Datang, ${user.namaLengkap}`,
+          subtitle:
+            user.role === 'GURU'
+              ? 'Membuka ruang manajemen jurnal, absensi, dan penilaian santri...'
+              : 'Membuka dashboard administrasi akademik Belajar Khot...',
+        });
+        await new Promise((r) => setTimeout(r, 700));
+        setCurrentUser(user);
+        setAuthToken(token);
+        localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(user));
+        localStorage.setItem(STORAGE_KEY_TOKEN, token);
+
+        const targetRoute = user.role === 'ADMIN' ? '/admin/dashboard' : '/guru/dashboard';
+        navigate(targetRoute);
+        setIsTransitioning(false);
+        showToast(
+          'success',
+          `Assalamu'alaikum, ${user.namaLengkap}`,
+          'Selamat datang di Jurnal Akademik Belajar Khot.'
+        );
+      };
+
       try {
         const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password }),
+          body: JSON.stringify({ username, password, portalMode }),
         });
         const contentType = res.headers.get('content-type') || '';
         if (contentType.includes('application/json')) {
           const json = await res.json();
           if (!res.ok || !json.success) {
+            setIsTransitioning(false);
             return { success: false, error: json.error || 'Login gagal.' };
           }
-          const user: User = json.user;
-          const token: string = json.token;
-          setCurrentUser(user);
-          setAuthToken(token);
-          localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(user));
-          localStorage.setItem(STORAGE_KEY_TOKEN, token);
-
-          const targetRoute = user.role === 'ADMIN' ? '/admin/dashboard' : '/guru/dashboard';
-          navigate(targetRoute);
-          showToast('success', `Assalamu'alaikum, ${user.namaLengkap}`, 'Selamat datang di Jurnal Akademik Belajar Khot.');
+          await completeLoginTransition(json.user as User, json.token as string);
           return { success: true };
         }
       } catch {
@@ -615,29 +696,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       // Fallback Autentikasi Statis (GitHub Pages / github.io)
-      const user = db.users.find((u) => u.username.toLowerCase() === normalizedUsername);
+      const user = findUserByLoginIdentifier(db.users, normalizedIdentifier);
       if (!user) {
-        return { success: false, error: 'Akun pengguna tidak ditemukan.' };
+        setIsTransitioning(false);
+        return { success: false, error: 'ID Login atau Username tidak ditemukan.' };
       }
       if (user.statusAkun !== 'Aktif') {
+        setIsTransitioning(false);
         return { success: false, error: 'Akun pengguna sedang dinonaktifkan oleh Administrator.' };
+      }
+      const portalCheck = validatePortalRoleAccess(user.role, portalMode);
+      if (!portalCheck.allowed) {
+        setIsTransitioning(false);
+        return { success: false, error: portalCheck.error };
       }
       const localPasswords = readLocalPasswords();
       const expectedPassword =
-        localPasswords[normalizedUsername] || (user.role === 'ADMIN' ? 'admin123' : 'guru123');
+        localPasswords[user.username.toLowerCase()] || (user.role === 'ADMIN' ? 'admin123' : 'guru123');
       if (password !== expectedPassword) {
+        setIsTransitioning(false);
         return { success: false, error: 'Password yang Anda masukkan tidak sesuai.' };
       }
 
       const token = 'STATIC-TOKEN-' + Date.now();
-      setCurrentUser(user);
-      setAuthToken(token);
-      localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(user));
-      localStorage.setItem(STORAGE_KEY_TOKEN, token);
-
-      const targetRoute = user.role === 'ADMIN' ? '/admin/dashboard' : '/guru/dashboard';
-      navigate(targetRoute);
-      showToast('success', `Assalamu'alaikum, ${user.namaLengkap}`, 'Selamat datang di Jurnal Akademik Belajar Khot.');
+      await completeLoginTransition(user, token);
       return { success: true };
     },
     [db.users, navigate, showToast]
@@ -695,6 +777,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: true, message: msg };
     },
     [authToken, db.users, showToast]
+  );
+
+  const changeOwnPassword = useCallback(
+    async (currentPassword: string, newPassword: string) => {
+      if (!currentUser) {
+        return { success: false, message: 'Sesi login tidak ditemukan.' };
+      }
+      try {
+        const res = await fetch('/api/auth/change-password', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+          },
+          body: JSON.stringify({ currentPassword, newPassword }),
+        });
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const json = await res.json();
+          if (!res.ok || !json.success) {
+            showToast('error', 'Gagal Mengubah Password', json.error);
+            return { success: false, message: json.error };
+          }
+          saveLocalPassword(currentUser.username, newPassword);
+          showToast('success', 'Password Diperbarui', json.message);
+          return { success: true, message: json.message };
+        }
+      } catch {
+        // Static mode fallback
+      }
+      const localPasswords = readLocalPasswords();
+      const expected =
+        localPasswords[currentUser.username.toLowerCase()] ||
+        (currentUser.role === 'ADMIN' ? 'admin123' : 'guru123');
+      if (currentPassword !== expected) {
+        showToast('error', 'Gagal Mengubah Password', 'Password saat ini tidak sesuai.');
+        return { success: false, message: 'Password saat ini tidak sesuai.' };
+      }
+      saveLocalPassword(currentUser.username, newPassword);
+      showToast('success', 'Password Diperbarui', 'Password akun Anda berhasil diperbarui.');
+      return { success: true, message: 'Password akun Anda berhasil diperbarui.' };
+    },
+    [authToken, currentUser, showToast]
   );
 
   // Filter Demo Data if tampilkanDataDemo is false
@@ -1527,6 +1652,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         currentUser,
         authToken,
         isLoading,
+        isTransitioning,
+        transitionMessage,
         isSaving,
         dbStatus,
         isEnvGasConfigured,
@@ -1544,6 +1671,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         login,
         logout,
         resetUserPassword,
+        changeOwnPassword,
         visibleKelas,
         visibleSantri,
         visibleJurnal,

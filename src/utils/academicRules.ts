@@ -338,3 +338,62 @@ export function generateNomorJurnal(tanggal: string, existingJournals: JurnalPem
   }
   return `${prefix}${String(maxNum + 1).padStart(3, '0')}`;
 }
+
+/**
+ * Generate ID Guru unik berikutnya (GRU-001, GRU-002, ...)
+ */
+export function generateNextGuruId(
+  users: Array<{ guruId?: string; userId: string }>
+): string {
+  const prefix = 'GRU-';
+  let maxNum = 0;
+  for (const u of users) {
+    const candidate = (u.guruId || '').trim().toUpperCase();
+    if (candidate.startsWith(prefix)) {
+      const parsed = parseInt(candidate.slice(prefix.length), 10);
+      if (!Number.isNaN(parsed) && parsed > maxNum) {
+        maxNum = parsed;
+      }
+    }
+  }
+  return `${prefix}${String(maxNum + 1).padStart(3, '0')}`;
+}
+
+/**
+ * Mencari akun pengguna berdasarkan Username ATAU ID Guru (case-insensitive).
+ */
+export function findUserByLoginIdentifier<
+  T extends { username: string; guruId?: string }
+>(users: T[], identifier: string): T | undefined {
+  const norm = identifier.trim().toLowerCase();
+  if (!norm) return undefined;
+  return users.find(
+    (u) =>
+      u.username.toLowerCase() === norm ||
+      (Boolean(u.guruId) && u.guruId!.trim().toLowerCase() === norm)
+  );
+}
+
+/**
+ * Validasi akses portal login antara Portal Guru dan Portal Administrator.
+ */
+export function validatePortalRoleAccess(
+  userRole: 'ADMIN' | 'GURU',
+  portalMode?: 'GURU' | 'ADMIN'
+): { allowed: boolean; error?: string } {
+  if (!portalMode) return { allowed: true };
+  if (portalMode === 'GURU' && userRole !== 'GURU') {
+    return {
+      allowed: false,
+      error: 'Akun Administrator harus masuk melalui tab Administrator.',
+    };
+  }
+  if (portalMode === 'ADMIN' && userRole !== 'ADMIN') {
+    return {
+      allowed: false,
+      error: 'Akun Guru silakan masuk melalui tab Portal Guru menggunakan ID Guru atau Username.',
+    };
+  }
+  return { allowed: true };
+}
+

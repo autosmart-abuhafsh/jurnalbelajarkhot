@@ -12,6 +12,8 @@ import {
   Printer,
   ArrowRight,
   Clock,
+  FileText,
+  BookOpen,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import {
@@ -35,9 +37,8 @@ export const DashboardPage: React.FC = () => {
   const isAdmin = currentUser?.role === 'ADMIN';
   const rolePrefix = isAdmin ? '/admin' : '/guru';
 
-  // Current reference date in workspace (2026-11-17)
-  const todayStr = '2026-11-17';
-  const currentMonthPrefix = '2026-11';
+  const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const currentMonthPrefix = todayStr.slice(0, 7);
 
   // Scoped attendance & grades
   const visibleJournalIds = useMemo(
@@ -198,15 +199,26 @@ export const DashboardPage: React.FC = () => {
       <section className="rounded-2xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-5 sm:p-7">
         <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
           <div className="min-w-0">
-            <p className="text-xs font-medium text-[#6B776D] dark:text-[#A3D1B3]">
-              {formatDateLongId(todayStr)} · {db.pengaturan.periodeAktif}
+            <p className="text-xs font-medium text-[#6B776D] dark:text-[#A3D1B3] flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+              <span>{formatDateLongId(todayStr)}</span>
+              <span>·</span>
+              <span>{db.pengaturan.periodeAktif}</span>
+              {!isAdmin && currentUser?.guruId && (
+                <>
+                  <span>·</span>
+                  <span className="font-mono font-semibold text-[#19432D] dark:text-[#A3D1B3] whitespace-nowrap">
+                    ID Guru: {currentUser.guruId}
+                  </span>
+                </>
+              )}
             </p>
             <h1 className="mt-1.5 text-xl sm:text-2xl lg:text-3xl font-bold text-[#19432D] dark:text-[#ECF3EE] tracking-tight">
               Assalamu&apos;alaikum, {currentUser?.namaLengkap || 'Ustadz'}.
             </h1>
             <p className="mt-1 text-xs sm:text-sm text-[#6B776D] dark:text-[#A3D1B3]/85 leading-relaxed">
-              Selamat datang di Jurnal Akademik Belajar Khot. Pantau perkembangan menulis khot,
-              kehadiran, dan rapor santri secara terstruktur.
+              {isAdmin
+                ? 'Selamat datang di Jurnal Akademik Belajar Khot. Pantau perkembangan menulis khot, kehadiran, dan rapor santri secara terstruktur.'
+                : `Anda mengampu ${visibleKelas.length} kelas (${visibleSantri.length} santri). Gunakan panel di bawah untuk mengisi jurnal pertemuan, absensi, penilaian khot, dan melihat rekap nilai santri.`}
             </p>
           </div>
 
@@ -258,6 +270,128 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Panel Manajemen Mengajar Guru (Khusus Guru / Pengajar) */}
+      {!isAdmin && (
+        <section
+          aria-label="Panel Manajemen Mengajar Guru"
+          className="rounded-2xl bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] p-5 sm:p-6 space-y-5"
+        >
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-[#19432D] dark:text-[#ECF3EE]">
+              Panel Manajemen Mengajar Guru
+            </h2>
+            <p className="text-xs text-[#6B776D] dark:text-[#A3D1B3]/80 mt-0.5">
+              Alur pengelolaan kelas binaan: catat jurnal pertemuan, isi absensi santri, input
+              nilai rubrik khot, lalu pantau rekap nilai &amp; rapor.
+            </p>
+            <p className="mt-1.5 text-xs font-medium text-[#19432D] dark:text-[#A3D1B3]">
+              Kelas Binaan:{' '}
+              <span className="font-semibold">
+                {visibleKelas.map((k) => k.namaKelas).join(' · ') || 'Belum Ditugaskan'}
+              </span>
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
+            <div className="rounded-xl bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C] p-4 flex flex-col justify-between gap-3">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-mono font-semibold text-[#6B776D] dark:text-[#A3D1B3]">
+                    LANGKAH 1
+                  </span>
+                  <FileText className="w-4 h-4 text-[#19432D] dark:text-[#A3D1B3]" />
+                </div>
+                <h3 className="mt-1.5 text-sm font-bold text-[#26332A] dark:text-[#ECF3EE]">
+                  Isi Jurnal Pertemuan
+                </h3>
+                <p className="mt-1 text-xs text-[#6B776D] dark:text-[#A3D1B3]/80 leading-relaxed">
+                  Catat materi khot, target pertemuan, dan ringkasan kegiatan belajar kelas Anda.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate('/guru/jurnal/add')}
+                className="w-full py-2 px-3 rounded-lg text-xs font-semibold bg-[#19432D] hover:bg-[#315B43] text-white transition-colors whitespace-nowrap"
+              >
+                + Buat Jurnal Baru
+              </button>
+            </div>
+
+            <div className="rounded-xl bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C] p-4 flex flex-col justify-between gap-3">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-mono font-semibold text-[#6B776D] dark:text-[#A3D1B3]">
+                    LANGKAH 2
+                  </span>
+                  <ClipboardCheck className="w-4 h-4 text-[#3B7551]" />
+                </div>
+                <h3 className="mt-1.5 text-sm font-bold text-[#26332A] dark:text-[#ECF3EE]">
+                  Input Absensi Santri
+                </h3>
+                <p className="mt-1 text-xs text-[#6B776D] dark:text-[#A3D1B3]/80 leading-relaxed">
+                  Tandai Hadir, Izin, Sakit, atau Alpa seluruh santri pada kelas yang Anda ampu.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate('/guru/absensi')}
+                className="w-full py-2 px-3 rounded-lg text-xs font-semibold bg-[#FFFFFF] dark:bg-[#142019] hover:bg-[#E3EAE3] dark:hover:bg-[#24382C] text-[#19432D] dark:text-[#A3D1B3] border border-[#E3EAE3] dark:border-[#24382C] transition-colors whitespace-nowrap"
+              >
+                Buka Form Absensi
+              </button>
+            </div>
+
+            <div className="rounded-xl bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C] p-4 flex flex-col justify-between gap-3">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-mono font-semibold text-[#6B776D] dark:text-[#A3D1B3]">
+                    LANGKAH 3
+                  </span>
+                  <Award className="w-4 h-4 text-[#19432D] dark:text-[#A3D1B3]" />
+                </div>
+                <h3 className="mt-1.5 text-sm font-bold text-[#26332A] dark:text-[#ECF3EE]">
+                  Penilaian Rubrik Khot
+                </h3>
+                <p className="mt-1 text-xs text-[#6B776D] dark:text-[#A3D1B3]/80 leading-relaxed">
+                  Input nilai per kriteria rubrik dan catatan perkembangan tulisan tiap santri.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate('/guru/penilaian')}
+                className="w-full py-2 px-3 rounded-lg text-xs font-semibold bg-[#FFFFFF] dark:bg-[#142019] hover:bg-[#E3EAE3] dark:hover:bg-[#24382C] text-[#19432D] dark:text-[#A3D1B3] border border-[#E3EAE3] dark:border-[#24382C] transition-colors whitespace-nowrap"
+              >
+                Input Nilai Santri
+              </button>
+            </div>
+
+            <div className="rounded-xl bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C] p-4 flex flex-col justify-between gap-3">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-mono font-semibold text-[#6B776D] dark:text-[#A3D1B3]">
+                    LANGKAH 4
+                  </span>
+                  <BookOpen className="w-4 h-4 text-[#19432D] dark:text-[#A3D1B3]" />
+                </div>
+                <h3 className="mt-1.5 text-sm font-bold text-[#26332A] dark:text-[#ECF3EE]">
+                  Rekap Nilai &amp; Rapor
+                </h3>
+                <p className="mt-1 text-xs text-[#6B776D] dark:text-[#A3D1B3]/80 leading-relaxed">
+                  Tinjau rekapitulasi nilai otomatis per santri dan terbitkan rapor harian/bulanan.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate('/guru/rekap-nilai')}
+                className="w-full py-2 px-3 rounded-lg text-xs font-semibold bg-[#FFFFFF] dark:bg-[#142019] hover:bg-[#E3EAE3] dark:hover:bg-[#24382C] text-[#19432D] dark:text-[#A3D1B3] border border-[#E3EAE3] dark:border-[#24382C] transition-colors whitespace-nowrap"
+              >
+                Lihat Rekap Nilai
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* B. Statistik Akademik (6 Kartu - 2 kolom di HP, 3 di Tablet, 6 di Desktop) */}
       <section aria-label="Statistik Akademik" className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">

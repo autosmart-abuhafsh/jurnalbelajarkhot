@@ -138,6 +138,7 @@ async function pushToGasWebApp(targetUrl: string, state: unknown, action = 'sync
   const response = await fetch(String(targetUrl), {
     method: 'POST',
     redirect: 'follow',
+    signal: AbortSignal.timeout(2500),
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify({
       action,
@@ -157,6 +158,7 @@ async function pullFromGasWebApp(targetUrl: string) {
   const response = await fetch(`${targetUrl}${sep}action=getState`, {
     method: 'GET',
     redirect: 'follow',
+    signal: AbortSignal.timeout(2500),
   });
   if (!response.ok) return null;
   const json = await response.json();
@@ -196,21 +198,23 @@ app.get('/api/config', (_req, res) => {
 });
 
 app.post('/api/auth/login', (req, res) => {
-  const { username, password } = req.body || {};
+  const { username, password, portalMode } = req.body || {};
   if (!username || !password) {
-    res.status(400).json({ success: false, error: 'Username dan password wajib diisi.' });
+    res.status(400).json({ success: false, error: 'ID Login / Username dan password wajib diisi.' });
     return;
   }
 
   const db = readDb();
   const creds = readCredentials();
-  const normalizedUsername = String(username).trim().toLowerCase();
+  const normalizedIdentifier = String(username).trim().toLowerCase();
   const user = db.users.find(
-    (u: { username: string }) => u.username.toLowerCase() === normalizedUsername
+    (u: { username: string; guruId?: string }) =>
+      u.username.toLowerCase() === normalizedIdentifier ||
+      (Boolean(u.guruId) && u.guruId!.trim().toLowerCase() === normalizedIdentifier)
   );
 
   if (!user) {
-    res.status(401).json({ success: false, error: 'Akun pengguna tidak ditemukan.' });
+    res.status(401).json({ success: false, error: 'ID Login atau Username tidak ditemukan.' });
     return;
   }
 
@@ -219,7 +223,22 @@ app.post('/api/auth/login', (req, res) => {
     return;
   }
 
-  let cred = creds.find((c) => c.userId === user.userId || c.username.toLowerCase() === normalizedUsername);
+  if (portalMode === 'GURU' && user.role !== 'GURU') {
+    res.status(403).json({
+      success: false,
+      error: 'Akun Administrator harus masuk melalui tab Administrator.',
+    });
+    return;
+  }
+  if (portalMode === 'ADMIN' && user.role !== 'ADMIN') {
+    res.status(403).json({
+      success: false,
+      error: 'Akun Guru silakan masuk melalui tab Portal Guru menggunakan ID Guru atau Username.',
+    });
+    return;
+  }
+
+  let cred = creds.find((c) => c.userId === user.userId || c.username.toLowerCase() === user.username.toLowerCase());
   if (!cred) {
     const salt = 'bk_salt_' + user.userId;
     cred = {
@@ -275,7 +294,7 @@ app.get('/api/auth/me', (req, res) => {
 
 app.post('/api/auth/reset-password', (req, res) => {
   const auth = getAuthUser(req);
-  if (auth && auth.user.role !== 'ADMIN') {
+  if (!auth || auth.user.role !== 'ADMIN') {
     res.status(403).json({ success: false, error: 'Hanya Administrator yang berhak mereset password.' });
     return;
   }
@@ -301,6 +320,39 @@ app.post('/api/auth/reset-password', (req, res) => {
   }
   writeCredentials(creds);
   res.json({ success: true, message: `Password untuk ${targetUser.namaLengkap} berhasil diperbarui.` });
+});
+
+app.post('/api/auth/change-password', (req, res) => {
+  const auth = getAuthUser(req);
+  if (!auth) {
+    res.status(401).json({ success: false, error: 'Sesi login tidak valid.' });
+    return;
+  }
+  const { currentPassword, newPassword } = req.body || {};
+  if (!currentPassword || !newPassword || String(newPassword).length < 5) {
+    res.status(400).json({ success: false, error: 'Password baru minimal 5 karakter.' });
+    return;
+  }
+  const creds = readCredentials();
+  const credIdx = creds.findIndex((c) => c.userId === auth.user.userId);
+  const existingCred = credIdx >= 0 ? creds[credIdx] : null;
+  if (existingCred) {
+    const currentHash = hashPassword(String(currentPassword), existingCred.salt);
+    if (currentHash !== existingCred.passwordHash) {
+      res.status(401).json({ success: false, error: 'Password saat ini tidak sesuai.' });
+      return;
+    }
+  }
+  const salt = 'bk_salt_' + crypto.randomBytes(8).toString('hex');
+  const passwordHash = hashPassword(String(newPassword), salt);
+  const nextCred = { userId: auth.user.userId, username: auth.user.username, salt, passwordHash };
+  if (credIdx >= 0) {
+    creds[credIdx] = nextCred;
+  } else {
+    creds.push(nextCred);
+  }
+  writeCredentials(creds);
+  res.json({ success: true, message: 'Password akun Anda berhasil diperbarui.' });
 });
 
 app.get('/api/state', async (req, res) => {
@@ -345,13 +397,17 @@ app.get('/api/state', async (req, res) => {
 
 app.put('/api/state', async (req, res) => {
   const auth = getAuthUser(req);
+  if (!auth) {
+    res.status(401).json({ success: false, error: 'Sesi login diperlukan untuk menyimpan perubahan data.' });
+    return;
+  }
   const { state, section } = req.body || {};
   if (!state) {
     res.status(400).json({ success: false, error: 'Data state tidak ditemukan.' });
     return;
   }
 
-  if (auth && auth.user.role === 'GURU') {
+  if (auth.user.role === 'GURU') {
     const restrictedSections = ['pengaturan', 'users', 'rubrik'];
     if (section && restrictedSections.includes(section)) {
       res.status(403).json({
@@ -398,7 +454,7 @@ app.put('/api/state', async (req, res) => {
 
 app.post('/api/state/reset-demo', (req, res) => {
   const auth = getAuthUser(req);
-  if (auth && auth.user.role !== 'ADMIN') {
+  if (!auth || auth.user.role !== 'ADMIN') {
     res.status(403).json({ success: false, error: 'Hanya Administrator yang dapat mereset data demo.' });
     return;
   }

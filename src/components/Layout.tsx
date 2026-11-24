@@ -27,10 +27,12 @@ import {
   Plus,
   Palette,
   RefreshCw,
+  KeyRound,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { LogoBelajarKhot } from './LogoBelajarKhot';
 import { LogoTemaCustomizer } from './LogoTemaCustomizer';
+import { InlineProcessLoader } from './LoadingOverlay';
 
 interface NavItem {
   key: string;
@@ -153,10 +155,12 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const {
     db,
     dbStatus,
+    isSaving,
     currentUser,
     currentPath,
     navigate,
     logout,
+    changeOwnPassword,
     theme,
     toggleTheme,
     toasts,
@@ -165,11 +169,36 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     closeConfirm,
     askConfirm,
     pullFromGoogleSheets,
+    showToast,
   } = useApp();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [logoModalOpen, setLogoModalOpen] = useState(false);
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [currentPwInput, setCurrentPwInput] = useState('');
+  const [newPwInput, setNewPwInput] = useState('');
+  const [pwSubmitting, setPwSubmitting] = useState(false);
+
+  const handleOwnPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentPwInput.trim() || newPwInput.trim().length < 5) {
+      showToast(
+        'warning',
+        'Input Belum Valid',
+        'Masukkan password saat ini dan password baru minimal 5 karakter.'
+      );
+      return;
+    }
+    setPwSubmitting(true);
+    const res = await changeOwnPassword(currentPwInput, newPwInput.trim());
+    setPwSubmitting(false);
+    if (res.success) {
+      setPasswordModalOpen(false);
+      setCurrentPwInput('');
+      setNewPwInput('');
+    }
+  };
 
   const isAdmin = currentUser?.role === 'ADMIN';
   const rolePrefix = isAdmin ? '/admin' : '/guru';
@@ -310,16 +339,29 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           })}
         </nav>
 
-        {/* User Footer + Logout */}
+        {/* User Footer + Ubah Password + Logout */}
         <div className="p-3 border-t border-[#E3EAE3] dark:border-[#24382C] space-y-2">
           {!sidebarCollapsed && currentUser && (
-            <div className="px-2 py-1">
-              <p className="text-xs font-semibold text-[#26332A] dark:text-[#ECF3EE] truncate">
-                {currentUser.namaLengkap}
-              </p>
-              <p className="text-[11px] text-[#6B776D] dark:text-[#A3D1B3]/80 truncate">
-                {currentUser.role === 'ADMIN' ? 'Administrator Lembaga' : 'Guru Pengajar Khot'}
-              </p>
+            <div className="px-2 py-1 flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-[#26332A] dark:text-[#ECF3EE] truncate">
+                  {currentUser.namaLengkap}
+                </p>
+                <p className="text-[11px] text-[#6B776D] dark:text-[#A3D1B3]/80 truncate">
+                  {currentUser.role === 'ADMIN'
+                    ? 'Administrator Lembaga'
+                    : `ID Guru: ${currentUser.guruId || currentUser.username}`}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPasswordModalOpen(true)}
+                title="Ubah Password Saya"
+                aria-label="Ubah Password"
+                className="p-1.5 rounded-lg text-[#6B776D] dark:text-[#A3D1B3] hover:bg-[#F3F7F2] dark:hover:bg-[#1B2B22] shrink-0"
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
           <div className="flex items-center gap-1.5">
@@ -417,13 +459,28 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
             <div className="p-4 border-t border-[#E3EAE3] dark:border-[#24382C] space-y-3">
               {currentUser && (
-                <div className="px-1">
-                  <p className="text-xs font-bold text-[#26332A] dark:text-[#ECF3EE] truncate">
-                    {currentUser.namaLengkap}
-                  </p>
-                  <p className="text-[11px] text-[#6B776D] dark:text-[#A3D1B3]/80">
-                    {currentUser.role === 'ADMIN' ? 'Administrator Lembaga' : 'Guru Pengajar Khot'}
-                  </p>
+                <div className="px-1 flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-[#26332A] dark:text-[#ECF3EE] truncate">
+                      {currentUser.namaLengkap}
+                    </p>
+                    <p className="text-[11px] text-[#6B776D] dark:text-[#A3D1B3]/80">
+                      {currentUser.role === 'ADMIN'
+                        ? 'Administrator Lembaga'
+                        : `ID Guru: ${currentUser.guruId || currentUser.username}`}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      setPasswordModalOpen(true);
+                    }}
+                    aria-label="Ubah Password"
+                    className="p-1.5 rounded-lg bg-[#F3F7F2] dark:bg-[#1B2B22] text-[#6B776D] dark:text-[#A3D1B3] shrink-0"
+                  >
+                    <KeyRound className="w-4 h-4" />
+                  </button>
                 </div>
               )}
               <div className="grid grid-cols-2 gap-2">
@@ -506,8 +563,15 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             </button>
           </nav>
 
-          {/* Zone 3: Quick Actions (Sinkron HP & PC + Edit Logo/Tema + Tambah Jurnal) */}
+          {/* Zone 3: Quick Actions (Proses Animasi + Sinkron HP & PC + Edit Logo/Tema + Tambah Jurnal) */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {(isSaving || dbStatus === 'syncing') && (
+              <InlineProcessLoader
+                label={dbStatus === 'syncing' ? 'Menyinkronkan...' : 'Menyimpan...'}
+                primaryColor={primaryColor}
+                nibColor={db.pengaturan.logoConfig?.nibColor || '#E5B84B'}
+              />
+            )}
             <button
               type="button"
               onClick={() => pullFromGoogleSheets()}
@@ -705,6 +769,87 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 {confirmDialog.confirmLabel || 'Konfirmasi'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Self-service Change Password Modal */}
+      {passwordModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="ubah-password-title"
+          className="no-print fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-xs"
+        >
+          <div className="bg-[#FFFFFF] dark:bg-[#142019] border border-[#E3EAE3] dark:border-[#24382C] rounded-2xl max-w-md w-full p-6 shadow-xl">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E3EAE3] dark:border-[#24382C]">
+              <h3
+                id="ubah-password-title"
+                className="text-base font-bold text-[#26332A] dark:text-[#ECF3EE] flex items-center gap-2"
+              >
+                <KeyRound className="w-4 h-4 text-[#19432D] dark:text-[#A3D1B3]" />
+                <span>Ubah Password Akun</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setPasswordModalOpen(false)}
+                aria-label="Tutup Ubah Password"
+                className="p-1 text-[#6B776D]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleOwnPasswordSubmit} className="mt-4 space-y-4 text-xs">
+              <div>
+                <label
+                  htmlFor="own-current-pw"
+                  className="block font-semibold text-[#26332A] dark:text-[#ECF3EE] mb-1.5"
+                >
+                  Password Saat Ini
+                </label>
+                <input
+                  id="own-current-pw"
+                  type="password"
+                  value={currentPwInput}
+                  onChange={(e) => setCurrentPwInput(e.target.value)}
+                  placeholder="Masukkan password saat ini"
+                  className="w-full px-3 py-2 text-sm rounded-lg bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="own-new-pw"
+                  className="block font-semibold text-[#26332A] dark:text-[#ECF3EE] mb-1.5"
+                >
+                  Password Baru (Min. 5 Karakter)
+                </label>
+                <input
+                  id="own-new-pw"
+                  type="password"
+                  value={newPwInput}
+                  onChange={(e) => setNewPwInput(e.target.value)}
+                  placeholder="Masukkan password baru"
+                  className="w-full px-3 py-2 text-sm rounded-lg bg-[#FAFCF9] dark:bg-[#1B2B22] border border-[#E3EAE3] dark:border-[#24382C]"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setPasswordModalOpen(false)}
+                  className="px-4 py-2 rounded-lg font-semibold bg-[#F3F7F2] dark:bg-[#1B2B22]"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={pwSubmitting}
+                  className="px-4 py-2 rounded-lg font-semibold bg-[#19432D] hover:bg-[#315B43] text-white disabled:opacity-50"
+                >
+                  {pwSubmitting ? 'Menyimpan...' : 'Simpan Password'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

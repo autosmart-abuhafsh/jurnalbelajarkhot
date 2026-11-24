@@ -9,6 +9,9 @@ import {
   validateProgramRubricWeights,
   upsertAttendanceRecord,
   generateNomorJurnal,
+  generateNextGuruId,
+  findUserByLoginIdentifier,
+  validatePortalRoleAccess,
 } from './academicRules';
 import {
   detectBasePathPrefix,
@@ -195,4 +198,32 @@ test('resolveGasEnvironmentConfig prioritizes Vercel environment variables', () 
   assert.equal(resolved.isEnvInjected, true);
   assert.equal(resolved.autoSyncEnabled, true);
 });
+
+test('generateNextGuruId increments unique teacher login IDs safely', () => {
+  const users = [
+    { userId: 'USR-ADMIN-01' },
+    { userId: 'USR-GURU-01', guruId: 'GRU-001' },
+    { userId: 'USR-GURU-03', guruId: 'GRU-004' },
+  ];
+  assert.equal(generateNextGuruId(users), 'GRU-005');
+  assert.equal(generateNextGuruId([]), 'GRU-001');
+});
+
+test('findUserByLoginIdentifier resolves either username or Guru ID case-insensitively', () => {
+  const users = [
+    { userId: 'USR-ADMIN-01', username: 'admin' },
+    { userId: 'USR-GURU-01', username: 'syamsu', guruId: 'GRU-001' },
+  ];
+  assert.equal(findUserByLoginIdentifier(users, 'gru-001')?.userId, 'USR-GURU-01');
+  assert.equal(findUserByLoginIdentifier(users, '  SYAMSU  ')?.userId, 'USR-GURU-01');
+  assert.equal(findUserByLoginIdentifier(users, 'unknown'), undefined);
+});
+
+test('validatePortalRoleAccess enforces separation between Guru and Admin login tabs', () => {
+  assert.equal(validatePortalRoleAccess('GURU', 'GURU').allowed, true);
+  assert.equal(validatePortalRoleAccess('ADMIN', 'GURU').allowed, false);
+  assert.equal(validatePortalRoleAccess('ADMIN', 'ADMIN').allowed, true);
+  assert.equal(validatePortalRoleAccess('GURU', 'ADMIN').allowed, false);
+});
+
 

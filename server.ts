@@ -120,23 +120,25 @@ async function startServer() {
     return { user, token };
   };
 
-  // POST /api/auth/login
+  // POST /api/auth/login (supports username or ID Guru)
   app.post('/api/auth/login', (req, res) => {
-    const { username, password } = req.body || {};
+    const { username, password, portalMode } = req.body || {};
     if (!username || !password) {
-      res.status(400).json({ success: false, error: 'Username dan password wajib diisi.' });
+      res.status(400).json({ success: false, error: 'ID Login / Username dan password wajib diisi.' });
       return;
     }
 
     const db = readDb();
     const creds = readCredentials();
-    const normalizedUsername = String(username).trim().toLowerCase();
+    const normalizedIdentifier = String(username).trim().toLowerCase();
     const user = db.users.find(
-      (u: { username: string }) => u.username.toLowerCase() === normalizedUsername
+      (u: { username: string; guruId?: string }) =>
+        u.username.toLowerCase() === normalizedIdentifier ||
+        (Boolean(u.guruId) && u.guruId!.trim().toLowerCase() === normalizedIdentifier)
     );
 
     if (!user) {
-      res.status(401).json({ success: false, error: 'Akun pengguna tidak ditemukan.' });
+      res.status(401).json({ success: false, error: 'ID Login atau Username tidak ditemukan.' });
       return;
     }
 
@@ -145,7 +147,22 @@ async function startServer() {
       return;
     }
 
-    let cred = creds.find((c) => c.userId === user.userId || c.username.toLowerCase() === normalizedUsername);
+    if (portalMode === 'GURU' && user.role !== 'GURU') {
+      res.status(403).json({
+        success: false,
+        error: 'Akun Administrator harus masuk melalui tab Administrator.',
+      });
+      return;
+    }
+    if (portalMode === 'ADMIN' && user.role !== 'ADMIN') {
+      res.status(403).json({
+        success: false,
+        error: 'Akun Guru silakan masuk melalui tab Portal Guru menggunakan ID Guru atau Username.',
+      });
+      return;
+    }
+
+    let cred = creds.find((c) => c.userId === user.userId || c.username.toLowerCase() === user.username.toLowerCase());
     if (!cred) {
       // Create default credential for newly added teacher
       const salt = 'bk_salt_' + user.userId;
@@ -233,6 +250,40 @@ async function startServer() {
     res.json({ success: true, message: `Password untuk ${targetUser.namaLengkap} berhasil diperbarui.` });
   });
 
+  // POST /api/auth/change-password (Authenticated self-service)
+  app.post('/api/auth/change-password', (req, res) => {
+    const auth = getAuthUser(req);
+    if (!auth) {
+      res.status(401).json({ success: false, error: 'Sesi login tidak valid.' });
+      return;
+    }
+    const { currentPassword, newPassword } = req.body || {};
+    if (!currentPassword || !newPassword || String(newPassword).length < 5) {
+      res.status(400).json({ success: false, error: 'Password baru minimal 5 karakter.' });
+      return;
+    }
+    const creds = readCredentials();
+    const credIdx = creds.findIndex((c) => c.userId === auth.user.userId);
+    const existingCred = credIdx >= 0 ? creds[credIdx] : null;
+    if (existingCred) {
+      const currentHash = hashPassword(String(currentPassword), existingCred.salt);
+      if (currentHash !== existingCred.passwordHash) {
+        res.status(401).json({ success: false, error: 'Password saat ini tidak sesuai.' });
+        return;
+      }
+    }
+    const salt = 'bk_salt_' + crypto.randomBytes(8).toString('hex');
+    const passwordHash = hashPassword(String(newPassword), salt);
+    const nextCred = { userId: auth.user.userId, username: auth.user.username, salt, passwordHash };
+    if (credIdx >= 0) {
+      creds[credIdx] = nextCred;
+    } else {
+      creds.push(nextCred);
+    }
+    writeCredentials(creds);
+    res.json({ success: true, message: 'Password akun Anda berhasil diperbarui.' });
+  });
+
   const getEnvGasUrl = () =>
     (
       process.env.GAS_WEB_APP_URL ||
@@ -257,6 +308,7 @@ async function startServer() {
     const response = await fetch(String(targetUrl), {
       method: 'POST',
       redirect: 'follow',
+      signal: AbortSignal.timeout(2500),
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
         action,
@@ -276,6 +328,7 @@ async function startServer() {
     const response = await fetch(`${targetUrl}${sep}action=getState`, {
       method: 'GET',
       redirect: 'follow',
+      signal: AbortSignal.timeout(2500),
     });
     if (!response.ok) return null;
     const json = await response.json();
@@ -341,6 +394,10 @@ async function startServer() {
   // PUT /api/state (Protected RBAC state update + Auto-Sync GAS)
   app.put('/api/state', async (req, res) => {
     const auth = getAuthUser(req);
+    if (!auth) {
+      res.status(401).json({ success: false, error: 'Sesi login diperlukan untuk menyimpan perubahan data.' });
+      return;
+    }
     const { state, section } = req.body || {};
     if (!state) {
       res.status(400).json({ success: false, error: 'Data state tidak ditemukan.' });
@@ -348,7 +405,7 @@ async function startServer() {
     }
 
     // Backend RBAC check: Guru cannot modify system settings, users/guru accounts, or rubric criteria
-    if (auth && auth.user.role === 'GURU') {
+    if (auth.user.role === 'GURU') {
       const restrictedSections = ['pengaturan', 'users', 'rubrik'];
       if (section && restrictedSections.includes(section)) {
         res.status(403).json({
@@ -368,6 +425,8 @@ async function startServer() {
       if (envSheetId) state.pengaturan.spreadsheetId = envSheetId;
     }
 
+    writeDb(state);
+
     const targetGasUrl = envGasUrl || state.pengaturan?.gasWebAppUrl;
     let gasSynced = false;
 
@@ -376,11 +435,10 @@ async function startServer() {
         await pushToGasWebApp(String(targetGasUrl), state, 'syncSnapshot');
         gasSynced = true;
       } catch {
-        // Tetap simpan lokal meskipun koneksi GAS tertunda
+        // Tetap simpan lokal meskipun koneksi GAS tertunda atau timeout
       }
     }
 
-    writeDb(state);
     res.json({
       success: true,
       gasSynced,
@@ -392,7 +450,7 @@ async function startServer() {
   // POST /api/state/reset-demo (Admin only)
   app.post('/api/state/reset-demo', (req, res) => {
     const auth = getAuthUser(req);
-    if (auth && auth.user.role !== 'ADMIN') {
+    if (!auth || auth.user.role !== 'ADMIN') {
       res.status(403).json({ success: false, error: 'Hanya Administrator yang dapat mereset data demo.' });
       return;
     }
